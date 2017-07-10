@@ -4,7 +4,16 @@ deps
 *.beam
 *.plt
 erl_crash.dump
-ebin/*.beam
+ebin
 rel/example_project
 .concrete/DEV_MODE
 .rebar
+.erlang.mk/
+emq_auth_jwt.d
+data/
+.DS_Store
+cover/
+ct.coverdata
+eunit.coverdata
+logs/
+test/ct.cover.spec
