@@ -25,6 +25,12 @@ Load the Plugin
 ./bin/emqttd_ctl plugins load emq_auth_jwt
 ```
 
+Example
+-------
+
+```
+mosquitto_pub -t 'pub' -m 'hello' -i test -u test -P eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJuYW1lIjoiYm9iIiwiYWdlIjoyOX0.bIV_ZQ8D5nQi0LT8AVkpM4Pd6wmlbpR9S8nOLJAsA8o
+```
 Algorithms
 ----------
 
