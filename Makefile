@@ -7,7 +7,7 @@ NO_AUTOPATCH = cuttlefish jwt
 
 DEPS = jwt clique
 
-dep_jwt i   = git https://github.com/marianoguerra/jwt-erl
+dep_jwt     = git https://github.com/marianoguerra/jwt-erl
 dep_clique  = git https://github.com/turtleDeng/clique
 
 BUILD_DEPS = emqttd cuttlefish
