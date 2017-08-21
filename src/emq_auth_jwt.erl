@@ -40,8 +40,8 @@ check(#mqtt_client{}, Password, Secret) ->
                 {ok, Password} ->
                     ok;
                 Error ->
-                lager:error("jwt encode fail:~p~n", [Error]),
-                {error, password_error}
+                    lager:error("JWT encode fail:~p~n", [Error]),
+                    {error, password_error}
             end;
         {error, _Error} ->
             {error, password_error}
