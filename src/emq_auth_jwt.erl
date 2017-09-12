@@ -35,15 +35,10 @@ check(#mqtt_client{}, Password, Secret) ->
     case jwt:decode(Password, Secret) of
         {ok, badtoken} ->
             ignore;
-        {ok, Jwt} ->
-            case jwt:encode(Jwt#jwt.alg, jsx:decode(Jwt#jwt.body), Secret) of
-                {ok, Password} ->
-                    ok;
-                Error ->
-                    lager:error("JWT encode fail:~p~n", [Error]),
-                    {error, password_error}
-            end;
-        {error, _Error} ->
+        {ok, _Jwt} ->
+            ok;
+        {error, Error} ->
+            lager:error("JWT decode error:~p", [Error]),
             {error, password_error}
     end.
 
