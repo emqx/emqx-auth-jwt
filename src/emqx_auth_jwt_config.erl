@@ -13,15 +13,17 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%--------------------------------------------------------------------
--module (emq_auth_jwt_config).
 
--define(APP, emq_auth_jwt).
+-module(emq_auth_jwt_cfg).
 
--export ([register/0, unregister/0]).
+-define(APP, emqx_auth_jwt).
+
+-export([register/0, unregister/0]).
 
 %%--------------------------------------------------------------------
 %% API
 %%--------------------------------------------------------------------
+
 register() ->
     clique_config:load_schema([code:priv_dir(?APP)], ?APP),
     register_config().
@@ -33,6 +35,7 @@ unregister() ->
 %%--------------------------------------------------------------------
 %% Set ENV Register Config
 %%--------------------------------------------------------------------
+
 register_config() ->
     Keys = keys(),
     [clique:register_config(Key , fun config_callback/2) || Key <- Keys],
@@ -45,6 +48,7 @@ config_callback([_, _, Key], Value) ->
 %%--------------------------------------------------------------------
 %% UnRegister config
 %%--------------------------------------------------------------------
+
 unregister_config() ->
     Keys = keys(),
     [clique:unregister_config(Key) || Key <- Keys],
@@ -52,3 +56,4 @@ unregister_config() ->
 
 keys() ->
     ["auth.jwt.secret"].
+

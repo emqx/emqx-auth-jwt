@@ -1,3 +1,0 @@
-{mapping, "auth.jwt.secret", "emq_auth_jwt.secret", [
-  {datatype, string}
-]}.

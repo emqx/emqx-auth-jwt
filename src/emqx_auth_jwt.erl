@@ -14,32 +14,36 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_auth_jwt_app).
+-module(emqx_auth_jwt).
 
--behaviour(application).
+-include_lib("emqx/include/emqx.hrl").
 
--export([start/2, stop/1]).
+-include_lib("jwt/include/jwt.hrl").
 
--behaviour(supervisor).
+-behaviour(emqx_auth_mod).
 
--export([init/1]).
-
--define(APP, emq_auth_jwt).
-
-start(_Type, _Args) ->
-    Secret= application:get_env(?APP, secret, <<"">>),
-    emqttd_access_control:register_mod(auth, ?APP, Secret),
-    emq_auth_jwt_config:register(),
-    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
-
-stop(_State) ->
-    emqttd_access_control:unregister_mod(auth, ?APP),
-    emq_auth_jwt_config:unregister().
+%% emqx_auth_mod callbacks
+-export([init/1, check/3, description/0]).
 
 %%--------------------------------------------------------------------
-%% Dummy Supervisor
+%% emqx_auth_mod callbacks
 %%--------------------------------------------------------------------
 
-init([]) ->
-    {ok, { {one_for_all, 1, 10}, []} }.
+init(Secret) ->
+    {ok, Secret}.
+
+check(_User, undefined, _Secret) ->
+    {error, password_undefined};
+
+check(#mqtt_client{}, Password, Secret) ->
+    case jwt:decode(Password, Secret) of
+        {ok, badtoken} -> ignore;
+        {ok, _Jwt} -> ok;
+        {error, Error} ->
+            lager:error("JWT decode error:~p", [Error]),
+            {error, password_error}
+    end.
+
+description() ->
+    "Authentication with JWT".
 
