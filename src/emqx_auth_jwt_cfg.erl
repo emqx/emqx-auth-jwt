@@ -14,7 +14,7 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_auth_jwt_cfg).
+-module(emqx_auth_jwt_cfg).
 
 -define(APP, emqx_auth_jwt).
 
