@@ -33,7 +33,7 @@ check(_User, undefined, _Secret) ->
     {error, password_undefined};
 check(#mqtt_client{}, Password, Secret) ->
     case jwt:decode(Password, Secret) of
-        {ok, badtoken} ->
+        {error, badtoken} ->
             ignore;
         {ok, _Jwt} ->
             ok;
