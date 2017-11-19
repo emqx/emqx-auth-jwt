@@ -27,7 +27,7 @@
 -define(APP, emq_auth_jwt).
 
 start(_Type, _Args) ->
-    Secret= application:get_env(?APP, secret, <<"">>),
+    Secret = application:get_env(?APP, secret, <<"">>),
     emqttd_access_control:register_mod(auth, ?APP, Secret),
     emq_auth_jwt_config:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
