@@ -28,21 +28,24 @@
 %%--------------------------------------------------------------------
 %% emqx_auth_mod callbacks
 %%--------------------------------------------------------------------
-
 init(Secret) ->
     {ok, Secret}.
 
 check(_User, undefined, _Secret) ->
     {error, password_undefined};
-
 check(#mqtt_client{}, Password, Secret) ->
     case jwt:decode(Password, Secret) of
-        {ok, badtoken} -> ignore;
-        {ok, _Jwt} -> ok;
+        {ok, _Token} ->
+            ok;
+        {error, badtoken} ->
+            ignore;
         {error, Error} ->
             lager:error("JWT decode error:~p", [Error]),
             {error, password_error}
     end.
+
+description() ->
+    "Authentication with JWT".
 
 description() ->
     "Authentication with JWT".

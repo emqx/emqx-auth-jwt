@@ -13,7 +13,7 @@ make && make tests
 Configure the Plugin
 --------------------
 
-File: etc/emqx_auth_jwt.conf
+File: etc/plugins/emqx_auth_jwt.conf
 
 ```
 auth.jwt.secret = emqsecret
@@ -51,6 +51,3 @@ Author
 ------
 
 EMQ X-Men Team.
-
-
-Feng at emqtt.io
