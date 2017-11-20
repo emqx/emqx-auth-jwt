@@ -47,6 +47,3 @@ check(#mqtt_client{}, Password, Secret) ->
 description() ->
     "Authentication with JWT".
 
-description() ->
-    "Authentication with JWT".
-
