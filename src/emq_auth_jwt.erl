@@ -17,7 +17,6 @@
 -module(emq_auth_jwt).
 
 -include_lib("emqttd/include/emqttd.hrl").
--include_lib("jwt/include/jwt.hrl").
 -behaviour(emqttd_auth_mod).
 
 %% emqttd_auth callbacks
@@ -29,16 +28,23 @@
 init(Secret) ->
     {ok, Secret}.
 
-check(_User, undefined, _Secret) ->
+check(_User, undefined, _KeyAndPem) ->
     {error, password_undefined};
-check(#mqtt_client{}, Password, Secret) ->
-    case jwt:decode(Password, Secret) of
-        {ok, badtoken} ->
-            ignore;
+check(#mqtt_client{}, Password, {Secret, RsaPubPem, EsPubPem}) ->
+    KeyOrPem =
+        case jwerl:header(Password) of
+            #{alg := <<"HS", _/binary>>} -> Secret;
+            #{alg := <<"RS", _/binary>>} -> RsaPubPem;
+            #{alg := <<"ES", _/binary>>} -> EsPubPem
+        end,
+    case catch jwerl:verify(Password, KeyOrPem, false) of
         {ok, _Jwt} ->
             ok;
         {error, Error} ->
             lager:error("JWT decode error:~p", [Error]),
+            {error, password_error};
+        Others ->
+            lager:error("JWT decode error:~p", [Others]),
             {error, password_error}
     end.
 

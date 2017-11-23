@@ -41,6 +41,13 @@ currently supports:
 * HS384 - HMAC using SHA-384 hash algorithm
 * HS512 - HMAC using SHA-512 hash algorithm
 
+* RS256 - RSA with the SHA-256 hash algorithm
+* RS384
+* RS512
+
+* ES256 - ECDSA using the P-256 curve
+* ES384
+* ES512
 
 License
 -------

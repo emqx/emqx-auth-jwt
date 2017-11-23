@@ -3,11 +3,11 @@ PROJECT_DESCRIPTION = Authentication with jwt
 
 PROJECT_VERSION = 2.3
 
-NO_AUTOPATCH = cuttlefish jwt
+NO_AUTOPATCH = cuttlefish jwerl
 
-DEPS = jwt clique
+DEPS = jwerl clique
 
-dep_jwt     = git https://github.com/marianoguerra/jwt-erl
+dep_jwerl   = git https://github.com/hjianbo/jwerl
 dep_clique  = git https://github.com/emqtt/clique
 
 BUILD_DEPS = emqttd cuttlefish
