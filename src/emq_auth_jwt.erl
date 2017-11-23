@@ -17,6 +17,7 @@
 -module(emq_auth_jwt).
 
 -include_lib("emqttd/include/emqttd.hrl").
+
 -behaviour(emqttd_auth_mod).
 
 %% emqttd_auth callbacks
