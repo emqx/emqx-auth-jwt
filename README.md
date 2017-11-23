@@ -1,4 +1,6 @@
+
 # emq-auth-jwt
+
 EMQ JWT Authentication Plugin
 
 Build
@@ -11,12 +13,11 @@ make && make tests
 Configure the Plugin
 --------------------
 
-File: etc/emq_auth_jwt.conf
+File: etc/plugins/emq_auth_jwt.conf
 
 ```
 auth.jwt.secret = emqsecret
 ```
-
 
 Load the Plugin
 ---------------
@@ -57,4 +58,5 @@ Apache License Version 2.0
 Author
 ------
 
-Feng at emqtt.io
+EMQ X Team.
+
