@@ -29,12 +29,12 @@
 start(_Type, _Args) ->
     Secret= application:get_env(?APP, secret, <<"">>),
     emqx_access_control:register_mod(auth, ?APP, Secret),
-    emqx_auth_jwt_config:register(),
+    emqx_auth_jwt_cfg:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 stop(_State) ->
     emqx_access_control:unregister_mod(auth, ?APP),
-    emqx_auth_jwt_config:unregister().
+    emqx_auth_jwt_cfg:unregister().
 
 %%--------------------------------------------------------------------
 %% Dummy Supervisor
