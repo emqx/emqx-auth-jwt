@@ -6,7 +6,7 @@ NO_AUTOPATCH = cuttlefish jwerl
 
 DEPS = jwerl clique
 
-dep_jwerl   = git https://github.com/hjianbo/jwerl
+dep_jwerl   = git https://github.com/emedia-project/jwerl
 dep_clique  = git https://github.com/emqtt/clique
 
 BUILD_DEPS = emqttd cuttlefish

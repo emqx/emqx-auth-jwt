@@ -43,12 +43,12 @@ currently supports:
 * HS512 - HMAC using SHA-512 hash algorithm
 
 * RS256 - RSA with the SHA-256 hash algorithm
-* RS384
-* RS512
+* RS384 - RSA with the SHA-384 hash algorithm
+* RS512 - RSA with the SHA-512 hash algorithm
 
 * ES256 - ECDSA using the P-256 curve
-* ES384
-* ES512
+* ES384 - ECDSA using the P-384 curve
+* ES512 - ECDSA using the P-512 curve
 
 License
 -------
