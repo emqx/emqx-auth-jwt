@@ -33,10 +33,16 @@ init(Secret) ->
 
 check(_User, undefined, _Secret) ->
     {error, password_undefined};
-check(#mqtt_client{}, Password, Secret) ->
+check(#mqtt_client{username = Username}, Password, Secret) ->
     case jwt:decode(Password, Secret) of
-        {ok, _Token} ->
-            ok;
+        {ok, #jwt{body = Body}} ->
+            Json = jsx:decode(Body),
+            Username1 = proplists:get_value(<<"username">>, Json),
+            Exp = proplists:get_value(<<"exp">>, Json),
+            case Username =:= Username1 andalso Exp >= emqx_time:now_secs() of
+                true  -> ok;
+                false -> {error, auth_failure}
+            end;
         {error, badtoken} ->
             ignore;
         {error, Error} ->
