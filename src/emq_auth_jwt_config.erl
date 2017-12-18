@@ -13,6 +13,7 @@
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
 %%--------------------------------------------------------------------
+
 -module (emq_auth_jwt_config).
 
 -define(APP, emq_auth_jwt).
@@ -52,3 +53,4 @@ unregister_config() ->
 
 keys() ->
     ["auth.jwt.secret"].
+
