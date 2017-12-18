@@ -2,12 +2,12 @@ PROJECT = emq_auth_jwt
 PROJECT_DESCRIPTION = Authentication with JWT
 PROJECT_VERSION = 2.3.2
 
-NO_AUTOPATCH = cuttlefish jwt
+NO_AUTOPATCH = cuttlefish jwerl
 
-DEPS = jwt clique
+DEPS = jwerl clique
 
-dep_jwt    = git https://github.com/marianoguerra/jwt-erl
-dep_clique = git https://github.com/emqtt/clique
+dep_jwerl   = git https://github.com/emedia-project/jwerl
+dep_clique  = git https://github.com/emqtt/clique
 
 BUILD_DEPS = emqttd cuttlefish
 dep_emqttd = git https://github.com/emqtt/emqttd develop
