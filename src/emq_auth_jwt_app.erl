@@ -18,6 +18,8 @@
 
 -behaviour(application).
 
+-import(application, [get_env/2, get_env/3]).
+
 -export([start/2, stop/1]).
 
 -behaviour(supervisor).
@@ -27,8 +29,7 @@
 -define(APP, emq_auth_jwt).
 
 start(_Type, _Args) ->
-    Secret = application:get_env(?APP, secret, <<"">>),
-    emqttd_access_control:register_mod(auth, ?APP, Secret),
+    emqttd_access_control:register_mod(auth, ?APP, auth_env()),
     emq_auth_jwt_config:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
@@ -42,4 +43,18 @@ stop(_State) ->
 
 init([]) ->
     {ok, { {one_for_all, 1, 10}, []} }.
+
+%%--------------------------------------------------------------------
+%% Internal functions
+%%--------------------------------------------------------------------
+
+auth_env() ->
+    #{secret => get_env(?APP, secret, undefined), pubkey => read_pubkey()}.
+
+read_pubkey() ->
+    case get_env(?APP, pubkey) of
+        undefined  -> undefined;
+        {ok, Path} -> {ok, PubKey} = file:read_file(Path),
+                      PubKey
+    end.
 
