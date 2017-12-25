@@ -1,3 +1,14 @@
+%%-------------------------------------------------------------------
+%% JWT Auth Plugin
+%%-------------------------------------------------------------------
+
+%% HMAC hash Secret
 {mapping, "auth.jwt.secret", "emq_auth_jwt.secret", [
   {datatype, string}
 ]}.
+
+%% RSA or ECDSA public key file
+{mapping, "auth.jwt.pubkey", "emq_auth_jwt.pubkey", [
+  {datatype, string}
+]}.
+
