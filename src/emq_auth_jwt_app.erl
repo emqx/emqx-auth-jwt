@@ -18,7 +18,7 @@
 
 -behaviour(application).
 
--import(application, [get_env/2]).
+-import(application, [get_env/2, get_env/3]).
 
 -export([start/2, stop/1]).
 
@@ -49,7 +49,7 @@ init([]) ->
 %%--------------------------------------------------------------------
 
 auth_env() ->
-    #{secret => get_env(?APP, secret), pubkey => read_pubkey()}.
+    #{secret => get_env(?APP, secret, undefined), pubkey => read_pubkey()}.
 
 read_pubkey() ->
     case get_env(?APP, pubkey) of
