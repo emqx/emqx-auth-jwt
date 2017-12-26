@@ -26,22 +26,42 @@
 -export([init/1, check/3, description/0]).
 
 %%--------------------------------------------------------------------
-%% emqx_auth_mod callbacks
+%% emqx_auth_mod Callbacks
 %%--------------------------------------------------------------------
-init(Secret) ->
-    {ok, Secret}.
 
-check(_User, undefined, _Secret) ->
-    {error, password_undefined};
-check(#mqtt_client{}, Password, Secret) ->
-    case jwt:decode(Password, Secret) of
-        {ok, _Token} ->
-            ok;
-        {error, badtoken} ->
-            ignore;
-        {error, Error} ->
+init(Env) ->
+    {ok, Env}.
+
+check(_Client, undefined, _Env) ->
+    {error, token_undefined};
+check(_Client, Token, Env) ->
+    verify_token(jwerl:header(Token), Token, Env).
+
+verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
+    {error, hmac_secret_undefined};
+verify_token(#{alg := <<"HS", _/binary>>}, Token, #{secret := Secret}) ->
+    verify_token(Token, Secret);
+verify_token(#{alg := <<"RS", _/binary>>}, _Token, #{pubkey := undefined}) ->
+    {error, rsa_pubkey_undefined};
+verify_token(#{alg := <<"RS", _/binary>>}, Token, #{pubkey := PubKey}) ->
+    verify_token(Token, PubKey);
+verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
+    {error, ecdsa_pubkey_undefined};
+verify_token(#{alg := <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
+    verify_token(Token, PubKey);
+verify_token(Header, _Token, _Env) ->
+    lager:error("Unsupported token: ~p", [Header]),
+    {error, token_unsupported}.
+
+verify_token(Token, SecretOrKey) ->
+    case catch jwerl:verify(Token, SecretOrKey, false) of
+        {ok, _Jwt}      -> ok;
+        {error, Reason} ->
+            lager:error("JWT decode error:~p", [Reason]),
+            {error, token_error};
+        {'EXIT', Error} ->
             lager:error("JWT decode error:~p", [Error]),
-            {error, password_error}
+            {error, token_error}
     end.
 
 description() ->
