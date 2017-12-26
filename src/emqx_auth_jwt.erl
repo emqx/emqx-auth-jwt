@@ -18,8 +18,6 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--include_lib("jwt/include/jwt.hrl").
-
 -behaviour(emqx_auth_mod).
 
 %% emqx_auth_mod callbacks
