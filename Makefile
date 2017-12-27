@@ -1,6 +1,6 @@
 PROJECT = emqx_auth_jwt
 PROJECT_DESCRIPTION = Authentication with JWT
-PROJECT_VERSION = 2.3.2
+PROJECT_VERSION = 2.4
 
 NO_AUTOPATCH = cuttlefish jwerl
 
