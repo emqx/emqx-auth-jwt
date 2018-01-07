@@ -1,13 +1,15 @@
+.PHONY: tests
+
 PROJECT = emq_auth_jwt
 PROJECT_DESCRIPTION = Authentication with JWT
-PROJECT_VERSION = 2.3.2
+PROJECT_VERSION = 2.3.3
 
 NO_AUTOPATCH = cuttlefish jwerl
 
 DEPS = jwerl clique
 
-dep_jwerl   = git https://github.com/emedia-project/jwerl
-dep_clique  = git https://github.com/emqtt/clique
+dep_jwerl  = git https://github.com/emedia-project/jwerl
+dep_clique = git https://github.com/emqtt/clique
 
 BUILD_DEPS = emqttd cuttlefish
 dep_emqttd = git https://github.com/emqtt/emqttd develop
