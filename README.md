@@ -16,7 +16,15 @@ Configure the Plugin
 File: etc/plugins/emq_auth_jwt.conf
 
 ```
+## HMAC Hash Secret.
+##
+## Value: String
 auth.jwt.secret = emqsecret
+
+## RSA or ECDSA public key file.
+##
+## Value: File
+## auth.jwt.pubkey = etc/certs/jwt_public_key.pem
 ```
 
 Load the Plugin
