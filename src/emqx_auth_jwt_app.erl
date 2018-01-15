@@ -30,7 +30,7 @@
 
 start(_Type, _Args) ->
     emqx_access_control:register_mod(auth, ?APP, auth_env()),
-    emqx_auth_jwt_config:register(),
+    emqx_auth_jwt_cfg:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 stop(_State) ->
