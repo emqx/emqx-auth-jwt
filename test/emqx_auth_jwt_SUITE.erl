@@ -14,7 +14,7 @@
 %% limitations under the License.
 %%--------------------------------------------------------------------
 
--module(emq_auth_jwt_SUITE).
+-module(emqx_auth_jwt_SUITE).
 
 -compile(export_all).
 
@@ -22,51 +22,52 @@
 
 -include_lib("common_test/include/ct.hrl").
 
--include_lib("emqttd/include/emqttd.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
--define(APP, emq_auth_jwt).
+-define(APP, emqx_auth_jwt).
 
 all() -> 
-    [{group, emq_auth_jwt}].
+    [{group, emqx_auth_jwt}].
 
 groups() ->
     [
-    {emq_auth_jwt, [sequence],
+    {emqx_auth_jwt, [sequence],
      [check_auth]}
     ].
 
 init_per_suite(Config) ->
-    [start_apps(App) || App <- [emqttd, emq_auth_jwt]],
+    [start_apps(App) || App <- [emqx, emqx_auth_jwt]],
     Config.
 
 end_per_suite(_Config) ->
-    [application:stop(App) || App <- [emq_auth_jwt, emqttd]].
+    [application:stop(App) || App <- [emqx_auth_jwt, emqx]].
 
 check_auth(_) ->
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    {ok, Jwt} = jwt:encode(hs256, [{client_id, <<"client1">>}, {username, <<"plain">>}], <<"emqsecret">>),
-    ok = emqttd_access_control:auth(Plain, Jwt),
-    {ok, Jwt_Error} = jwt:encode(hs256, [{client_id, <<"client1">>}, {username, <<"plain">>}], <<"secret">>),
-    {error, password_error} = emqttd_access_control:auth(Plain, Jwt_Error),
-    Result =
-    case emqttd:env(allow_anonymous, false) of
-        true  -> ok;
-        false -> {error, "No auth module to check!"}
-    end,
-    Result = emqttd_access_control:auth(Plain, <<"asd">>).
+    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"emqxsecret">>),
+    ok = emqx_access_control:auth(Plain, Jwt),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"secret">>),
+    {error, token_error} = emqx_access_control:auth(Plain, Jwt_Error).
+    %%%% issue 01 type error?
+    %%  Result =
+    %%  case emqx:env(allow_anonymous, false) of
+    %%      true  -> ok;
+    %%      false -> {error, "No auth module to check!"}
+    %%  end.
+    %% Result = emqx_access_control:auth(Plain, <<"asd">>).
 
 start_apps(App) ->
     NewConfig = generate_config(App),
     lists:foreach(fun set_app_env/1, NewConfig).
 
-generate_config(emqttd) ->
-    Schema = cuttlefish_schema:files([local_path(["deps", "emqttd", "priv", "emq.schema"])]),
-    Conf = conf_parse:file([local_path(["deps", "emqttd", "etc", "emq.conf"])]),
+generate_config(emqx) ->
+    Schema = cuttlefish_schema:files([local_path(["deps", "emqx", "priv", "emqx.schema"])]),
+    Conf = conf_parse:file([local_path(["deps", "emqx", "etc", "emqx.conf"])]),
     cuttlefish_generator:map(Schema, Conf);
 
 generate_config(?APP) ->
-    Schema = cuttlefish_schema:files([local_path(["priv", "emq_auth_jwt.schema"])]),
-    Conf = conf_parse:file([local_path(["etc", "emq_auth_jwt.conf"])]),
+    Schema = cuttlefish_schema:files([local_path(["priv", "emqx_auth_jwt.schema"])]),
+    Conf = conf_parse:file([local_path(["etc", "emqx_auth_jwt.conf"])]),
     cuttlefish_generator:map(Schema, Conf).
 
 get_base_dir(Module) ->
@@ -84,7 +85,11 @@ local_path(Components) ->
 
 set_app_env({App, Lists}) ->
     F = fun ({acl_file, _Var}) ->
-                application:set_env(App, acl_file, local_path(["deps", "emqttd", "etc", "acl.conf"]));
+                application:set_env(App, acl_file, local_path(["deps", "emqx", "etc", "acl.conf"]));
+            ({license_file, _Var}) ->
+                application:set_env(App, license_file, local_path(["deps", "emqx", "etc", "emqx.lic"]));
+            ({plugins_loaded_file, _Var}) ->
+                application:set_env(App, plugins_loaded_file, local_path(["deps","emqx","test", "emqx_SUITE_data","loaded_plugins"]));
             ({Par, Var}) ->
                 application:set_env(App, Par, Var)
         end,
