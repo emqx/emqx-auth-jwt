@@ -52,8 +52,8 @@ verify_token(Header, _Token, _Env) ->
     {error, token_unsupported}.
 
 verify_token(Token, SecretOrKey) ->
-    case catch jwerl:verify(Token, SecretOrKey, false) of
-        {ok, _Jwt}      -> ok;
+    case catch jwerl:verify(Token, SecretOrKey, true) of
+        {ok, _Claims}  -> ok;
         {error, Reason} ->
             lager:error("JWT decode error:~p", [Reason]),
             {error, token_error};
@@ -64,4 +64,3 @@ verify_token(Token, SecretOrKey) ->
 
 description() ->
     "Authentication with JWT".
-
