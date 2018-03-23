@@ -44,10 +44,10 @@ end_per_suite(_Config) ->
 
 check_auth(_) ->
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    {ok, Jwt} = jwt:encode(hs256, [{client_id, <<"client1">>}, {username, <<"plain">>}], <<"emqsecret">>),
+    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}, {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
     ok = emqttd_access_control:auth(Plain, Jwt),
-    {ok, Jwt_Error} = jwt:encode(hs256, [{client_id, <<"client1">>}, {username, <<"plain">>}], <<"secret">>),
-    {error, password_error} = emqttd_access_control:auth(Plain, Jwt_Error),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256,<<"secret">>),
+    {error, token_error} = emqttd_access_control:auth(Plain, Jwt_Error),
     Result =
     case emqttd:env(allow_anonymous, false) of
         true  -> ok;

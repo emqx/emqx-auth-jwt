@@ -33,7 +33,10 @@ init(Env) ->
 check(_Client, undefined, _Env) ->
     {error, token_undefined};
 check(_Client, Token, Env) ->
-    verify_token(jwerl:header(Token), Token, Env).
+    case catch jwerl:header(Token) of
+        {'EXIT', _} -> ignore; % Not a JWT Token
+        Headers -> verify_token(Headers, Token, Env)
+    end.
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
@@ -52,8 +55,8 @@ verify_token(Header, _Token, _Env) ->
     {error, token_unsupported}.
 
 verify_token(Token, SecretOrKey) ->
-    case catch jwerl:verify(Token, SecretOrKey, false) of
-        {ok, _Jwt}      -> ok;
+    case catch jwerl:verify(Token, SecretOrKey, true) of
+        {ok, _Claims}  -> ok;
         {error, Reason} ->
             lager:error("JWT decode error:~p", [Reason]),
             {error, token_error};
@@ -64,4 +67,3 @@ verify_token(Token, SecretOrKey) ->
 
 description() ->
     "Authentication with JWT".
-
