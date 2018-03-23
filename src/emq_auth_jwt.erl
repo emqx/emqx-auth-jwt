@@ -33,7 +33,10 @@ init(Env) ->
 check(_Client, undefined, _Env) ->
     {error, token_undefined};
 check(_Client, Token, Env) ->
-    verify_token(jwerl:header(Token), Token, Env).
+    case catch jwerl:header(Token) of
+        {'EXIT', _} -> ignore; % Not a JWT Token
+        Headers -> verify_token(Headers, Token, Env)
+    end.
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
