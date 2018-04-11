@@ -44,17 +44,16 @@ end_per_suite(_Config) ->
 
 check_auth(_) ->
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"emqxsecret">>),
-    ok = emqx_access_control:auth(Plain, Jwt),
-    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"secret">>),
-    {error, token_error} = emqx_access_control:auth(Plain, Jwt_Error).
-    %%%% issue 01 type error?
-    %%  Result =
-    %%  case emqx:env(allow_anonymous, false) of
-    %%      true  -> ok;
-    %%      false -> {error, "No auth module to check!"}
-    %%  end.
-    %% Result = emqx_access_control:auth(Plain, <<"asd">>).
+    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}, {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
+    ok = emqttd_access_control:auth(Plain, Jwt),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256,<<"secret">>),
+    {error, token_error} = emqttd_access_control:auth(Plain, Jwt_Error),
+    Result =
+    case emqttd:env(allow_anonymous, false) of
+        true  -> ok;
+        false -> {error, "No auth module to check!"}
+    end,
+    Result = emqttd_access_control:auth(Plain, <<"asd">>).
 
 start_apps(App) ->
     NewConfig = generate_config(App),
