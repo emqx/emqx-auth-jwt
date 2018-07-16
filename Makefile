@@ -7,7 +7,7 @@ PROJECT_VERSION = 3.0
 DEPS = jwerl clique
 
 dep_jwerl  = git https://github.com/G-Corp/jwerl 1.0.0
-dep_clique = git https://github.com/emqtt/clique
+dep_clique = git https://github.com/emqx/clique
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git https://github.com/emqtt/emqttd emqx30
