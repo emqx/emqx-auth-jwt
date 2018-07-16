@@ -26,7 +26,7 @@
 
 -define(APP, emq_auth_jwt).
 
-all() -> 
+all() ->
     [{group, emq_auth_jwt}].
 
 groups() ->
