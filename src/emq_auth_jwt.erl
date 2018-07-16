@@ -40,23 +40,24 @@ check(_Client, Token, Env) ->
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
-verify_token(#{alg := <<"HS", _/binary>>}, Token, #{secret := Secret}) ->
-    verify_token(Token, Secret);
+verify_token(#{alg := Alg = <<"HS", _/binary>>}, Token, #{secret := Secret}) ->
+    verify_token2(Alg, Token, Secret);
 verify_token(#{alg := <<"RS", _/binary>>}, _Token, #{pubkey := undefined}) ->
     {error, rsa_pubkey_undefined};
-verify_token(#{alg := <<"RS", _/binary>>}, Token, #{pubkey := PubKey}) ->
-    verify_token(Token, PubKey);
+verify_token(#{alg := Alg = <<"RS", _/binary>>}, Token, #{pubkey := PubKey}) ->
+    verify_token2(Alg, Token, PubKey);
 verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
     {error, ecdsa_pubkey_undefined};
-verify_token(#{alg := <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
-    verify_token(Token, PubKey);
+verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
+    verify_token2(Alg, Token, PubKey);
 verify_token(Header, _Token, _Env) ->
     lager:error("Unsupported token: ~p", [Header]),
     {error, token_unsupported}.
 
-verify_token(Token, SecretOrKey) ->
-    case catch jwerl:verify(Token, SecretOrKey, true) of
-        {ok, _Claims}  -> ok;
+verify_token2(Alg, Token, SecretOrKey) ->
+    case catch jwerl:verify(Token, decode_algo(Alg), SecretOrKey) of
+        {ok, _Claims}  ->
+            ok;
         {error, Reason} ->
             lager:error("JWT decode error:~p", [Reason]),
             {error, token_error};
@@ -64,6 +65,18 @@ verify_token(Token, SecretOrKey) ->
             lager:error("JWT decode error:~p", [Error]),
             {error, token_error}
     end.
+
+decode_algo(<<"HS256">>) -> hs256;
+decode_algo(<<"HS384">>) -> hs384;
+decode_algo(<<"HS512">>) -> hs512;
+decode_algo(<<"RS256">>) -> rs256;
+decode_algo(<<"RS384">>) -> rs384;
+decode_algo(<<"RS512">>) -> rs512;
+decode_algo(<<"ES256">>) -> es256;
+decode_algo(<<"ES384">>) -> es384;
+decode_algo(<<"ES512">>) -> es512;
+decode_algo(<<"none">>)  -> none;
+decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 
 description() ->
     "Authentication with JWT".
