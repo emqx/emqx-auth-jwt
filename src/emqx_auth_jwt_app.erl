@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2013-2018 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,7 +11,6 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
 -module(emqx_auth_jwt_app).
 
@@ -38,7 +36,7 @@ stop(_State) ->
     emqx_auth_jwt_cfg:unregister().
 
 %%--------------------------------------------------------------------
-%% Dummy Supervisor
+%% Dummy supervisor
 %%--------------------------------------------------------------------
 
 init([]) ->
@@ -49,12 +47,11 @@ init([]) ->
 %%--------------------------------------------------------------------
 
 auth_env() ->
-    #{secret => get_env(?APP, secret, undefined), pubkey => read_pubkey()}.
+    #{secret => application:get_env(?APP, secret, undefined), pubkey => read_pubkey()}.
 
 read_pubkey() ->
-    case get_env(?APP, pubkey) of
+    case application:get_env(?APP, pubkey) of
         undefined  -> undefined;
-        {ok, Path} -> {ok, PubKey} = file:read_file(Path),
-                      PubKey
+        {ok, Path} -> {ok, PubKey} = file:read_file(Path), PubKey
     end.
 

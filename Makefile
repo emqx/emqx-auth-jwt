@@ -4,16 +4,16 @@ PROJECT = emqx_auth_jwt
 PROJECT_DESCRIPTION = Authentication with JWT
 PROJECT_VERSION = 3.0
 
-NO_AUTOPATCH = cuttlefish jwerl
-
 DEPS = jwerl clique
 
-dep_jwerl  = git https://github.com/emedia-project/jwerl
+dep_jwerl  = git https://github.com/G-Corp/jwerl 1.0.0
 dep_clique = git https://github.com/emqtt/clique
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git https://github.com/emqtt/emqttd emqx30
 dep_cuttlefish = git https://github.com/emqtt/cuttlefish
+
+NO_AUTOPATCH = cuttlefish jwerl
 
 ERLC_OPTS += +debug_info
 ERLC_OPTS += +'{parse_transform, lager_transform}'

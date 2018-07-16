@@ -1,5 +1,4 @@
-%%--------------------------------------------------------------------
-%% Copyright (c) 2017 EMQ Enterprise, Inc. (http://emqtt.io)
+%% Copyright (c) 2018 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -12,7 +11,6 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
-%%--------------------------------------------------------------------
 
 -module(emqx_auth_jwt_SUITE).
 
@@ -26,7 +24,7 @@
 
 -define(APP, emqx_auth_jwt).
 
-all() -> 
+all() ->
     [{group, emqx_auth_jwt}].
 
 groups() ->
@@ -44,17 +42,16 @@ end_per_suite(_Config) ->
 
 check_auth(_) ->
     Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"emqxsecret">>),
+    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}, {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
     ok = emqx_access_control:auth(Plain, Jwt),
-    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256, <<"secret">>),
-    {error, token_error} = emqx_access_control:auth(Plain, Jwt_Error).
-    %%%% issue 01 type error?
-    %%  Result =
-    %%  case emqx:env(allow_anonymous, false) of
-    %%      true  -> ok;
-    %%      false -> {error, "No auth module to check!"}
-    %%  end.
-    %% Result = emqx_access_control:auth(Plain, <<"asd">>).
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256,<<"secret">>),
+    {error, token_error} = emqx_access_control:auth(Plain, Jwt_Error),
+    Result =
+    case emqx:env(allow_anonymous, false) of
+        true  -> ok;
+        false -> {error, "No auth module to check!"}
+    end,
+    ?assertEqual(Result, emqx_access_control:auth(Plain, <<"asd">>)).
 
 start_apps(App) ->
     NewConfig = generate_config(App),
