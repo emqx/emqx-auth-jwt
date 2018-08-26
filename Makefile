@@ -1,8 +1,10 @@
 .PHONY: tests
 
 PROJECT = emqx_auth_jwt
-PROJECT_DESCRIPTION = Authentication with JWT
+PROJECT_DESCRIPTION = EMQ X Authentication with JWT
 PROJECT_VERSION = 3.0
+
+NO_AUTOPATCH = cuttlefish jwerl
 
 DEPS = jwerl clique
 

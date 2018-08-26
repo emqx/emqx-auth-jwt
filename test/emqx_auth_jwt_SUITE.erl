@@ -28,10 +28,7 @@ all() ->
     [{group, emqx_auth_jwt}].
 
 groups() ->
-    [
-    {emqx_auth_jwt, [sequence],
-     [check_auth]}
-    ].
+    [{emqx_auth_jwt, [sequence], [check_auth]}].
 
 init_per_suite(Config) ->
     [start_apps(App) || App <- [emqx, emqx_auth_jwt]],
@@ -41,17 +38,18 @@ end_per_suite(_Config) ->
     [application:stop(App) || App <- [emqx_auth_jwt, emqx]].
 
 check_auth(_) ->
-    Plain = #mqtt_client{client_id = <<"client1">>, username = <<"plain">>},
-    Jwt = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}, {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
-    ok = emqx_access_control:auth(Plain, Jwt),
-    Jwt_Error = jwerl:sign([{client_id, <<"client1">>}, {username, <<"plain">>}], hs256,<<"secret">>),
-    {error, token_error} = emqx_access_control:auth(Plain, Jwt_Error),
-    Result =
-    case emqx:env(allow_anonymous, false) of
-        true  -> ok;
-        false -> {error, "No auth module to check!"}
-    end,
-    ?assertEqual(Result, emqx_access_control:auth(Plain, <<"asd">>)).
+    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
+    Jwt = jwerl:sign([{client_id, <<"client1">>},
+                      {username, <<"plain">>},
+                      {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
+    ok = emqx_access_control:authenticate(Plain, Jwt),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
+                            {username, <<"plain">>}], hs256, <<"secret">>),
+    {error, token_error} = emqx_access_control:authenticate(Plain, Jwt_Error),
+    ?assertEqual(case emqx_config:get_env(allow_anonymous, false) of
+                     true  -> ok;
+                     false -> {error, auth_modules_not_found}
+                 end, emqx_access_control:authenticate(Plain, <<"asd">>)).
 
 start_apps(App) ->
     NewConfig = generate_config(App),
@@ -92,3 +90,4 @@ set_app_env({App, Lists}) ->
         end,
     lists:foreach(F, Lists),
     application:ensure_all_started(App).
+

@@ -28,12 +28,13 @@
 init(Env) ->
     {ok, Env}.
 
-check(_Client, undefined, _Env) ->
+check(_Credentials, undefined, _Env) ->
     {error, token_undefined};
-check(_Client, Token, Env) ->
+check(_Credentials, Token, Env) ->
     case catch jwerl:header(Token) of
         {'EXIT', _} -> ignore; % Not a JWT Token
-        Headers -> verify_token(Headers, Token, Env)
+        Headers ->
+            verify_token(Headers, Token, Env)
     end.
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
@@ -76,5 +77,4 @@ decode_algo(<<"ES512">>) -> es512;
 decode_algo(<<"none">>)  -> none;
 decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 
-description() ->
-    "Authentication with JWT".
+description() -> "Authentication with JWT".
