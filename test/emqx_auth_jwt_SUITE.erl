@@ -31,7 +31,10 @@ groups() ->
     [{emqx_auth_jwt, [sequence], [check_auth]}].
 
 init_per_suite(Config) ->
-    [start_apps(App) || App <- [emqx, emqx_auth_jwt]],
+    DataDir = proplists:get_value(data_dir, Config),
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    Apps = [start_apps(App, DataDir) || App <- [emqx, emqx_auth_jwt]],
+    ct:log("Apps: ~p~n", [Apps]),
     Config.
 
 end_per_suite(_Config) ->
@@ -41,8 +44,13 @@ check_auth(_) ->
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client1">>},
                       {username, <<"plain">>},
-                      {exp, os:system_time(seconds) + 10}], hs256, <<"emqsecret">>),
+                      {exp, os:system_time(seconds) + 1}], hs256, <<"emqxsecret">>),
+    ct:pal("Jwt: ~p~n", [Jwt]),
     ok = emqx_access_control:authenticate(Plain, Jwt),
+
+    ct:sleep(1000),
+    {error,token_error} = emqx_access_control:authenticate(Plain, Jwt),
+
     Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
                             {username, <<"plain">>}], hs256, <<"secret">>),
     {error, token_error} = emqx_access_control:authenticate(Plain, Jwt_Error),
@@ -51,43 +59,12 @@ check_auth(_) ->
                      false -> {error, auth_modules_not_found}
                  end, emqx_access_control:authenticate(Plain, <<"asd">>)).
 
-start_apps(App) ->
-    NewConfig = generate_config(App),
-    lists:foreach(fun set_app_env/1, NewConfig).
-
-generate_config(emqx) ->
-    Schema = cuttlefish_schema:files([local_path(["deps", "emqx", "priv", "emqx.schema"])]),
-    Conf = conf_parse:file([local_path(["deps", "emqx", "etc", "emqx.conf"])]),
-    cuttlefish_generator:map(Schema, Conf);
-
-generate_config(?APP) ->
-    Schema = cuttlefish_schema:files([local_path(["priv", "emqx_auth_jwt.schema"])]),
-    Conf = conf_parse:file([local_path(["etc", "emqx_auth_jwt.conf"])]),
-    cuttlefish_generator:map(Schema, Conf).
-
-get_base_dir(Module) ->
-    {file, Here} = code:is_loaded(Module),
-    filename:dirname(filename:dirname(Here)).
-
-get_base_dir() ->
-    get_base_dir(?MODULE).
-
-local_path(Components, Module) ->
-    filename:join([get_base_dir(Module) | Components]).
-
-local_path(Components) ->
-    local_path(Components, ?MODULE).
-
-set_app_env({App, Lists}) ->
-    F = fun ({acl_file, _Var}) ->
-                application:set_env(App, acl_file, local_path(["deps", "emqx", "etc", "acl.conf"]));
-            ({license_file, _Var}) ->
-                application:set_env(App, license_file, local_path(["deps", "emqx", "etc", "emqx.lic"]));
-            ({plugins_loaded_file, _Var}) ->
-                application:set_env(App, plugins_loaded_file, local_path(["deps","emqx","test", "emqx_SUITE_data","loaded_plugins"]));
-            ({Par, Var}) ->
-                application:set_env(App, Par, Var)
-        end,
-    lists:foreach(F, Lists),
+start_apps(App, _DataDir) ->
     application:ensure_all_started(App).
-
+%start_apps(App, DataDir) ->
+%    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
+%    Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
+%    NewConfig = cuttlefish_generator:map(Schema, Conf),
+%    Vals = proplists:get_value(App, NewConfig),
+%    [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
+%    application:ensure_all_started(App).
