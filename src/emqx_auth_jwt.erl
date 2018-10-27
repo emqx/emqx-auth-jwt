@@ -50,7 +50,7 @@ verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
 verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
     verify_token2(Alg, Token, PubKey);
 verify_token(Header, _Token, _Env) ->
-    lager:error("Unsupported token: ~p", [Header]),
+    logger:error("Unsupported token: ~p", [Header]),
     {error, token_unsupported}.
 
 verify_token2(Alg, Token, SecretOrKey) ->
@@ -58,10 +58,10 @@ verify_token2(Alg, Token, SecretOrKey) ->
         {ok, _Claims}  ->
             ok;
         {error, Reason} ->
-            lager:error("JWT decode error:~p", [Reason]),
+            logger:error("JWT decode error:~p", [Reason]),
             {error, token_error};
         {'EXIT', Error} ->
-            lager:error("JWT decode error:~p", [Error]),
+            logger:error("JWT decode error:~p", [Error]),
             {error, token_error}
     end.
 
