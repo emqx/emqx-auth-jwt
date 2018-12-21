@@ -9,11 +9,11 @@ NO_AUTOPATCH = cuttlefish jwerl
 DEPS = jwerl clique
 
 dep_jwerl  = git-emqx https://github.com/G-Corp/jwerl 1.0.0
-dep_clique = git-emqx https://github.com/emqx/clique develop
+dep_clique = git-emqx https://github.com/emqx/clique v0.3.11
 
 BUILD_DEPS = emqx cuttlefish
 dep_emqx = git-emqx https://github.com/emqx/emqx emqx30
-dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish emqx30
+dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish v2.2.0
 
 NO_AUTOPATCH = cuttlefish jwerl
 
@@ -23,11 +23,7 @@ TEST_ERLC_OPTS += +debug_info
 
 COVER = true
 
-define dep_fetch_git-emqx
-	git clone -q --depth 1 -b $(call dep_commit,$(1)) -- $(call dep_repo,$(1)) $(DEPS_DIR)/$(call dep_name,$(1)) > /dev/null 2>&1; \
-	cd $(DEPS_DIR)/$(call dep_name,$(1));
-endef
-
+$(shell [ -f erlang.mk ] || curl -s -o erlang.mk https://raw.githubusercontent.com/emqx/erlmk/master/erlang.mk)
 include erlang.mk
 
 app.config::
