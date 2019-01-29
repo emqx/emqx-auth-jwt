@@ -12,7 +12,7 @@ dep_jwerl  = git-emqx https://github.com/G-Corp/jwerl 1.0.0
 dep_clique = git-emqx https://github.com/emqx/clique v0.3.11
 
 BUILD_DEPS = emqx cuttlefish
-dep_emqx = git-emqx https://github.com/emqx/emqx emqx30
+dep_emqx = git-emqx https://github.com/emqx/emqx testing
 dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish v2.2.1
 
 
