@@ -18,3 +18,5 @@ eunit.coverdata
 logs/
 test/ct.cover.spec
 emq_auth_jwt.d
+erlang.mk
+
