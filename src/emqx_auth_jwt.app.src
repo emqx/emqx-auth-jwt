@@ -1,0 +1,7 @@
+{application,emqx_auth_jwt,
+             [{description,"EMQ X Authentication with JWT"},
+              {vsn,"git"},
+              {modules,[]},
+              {registered,[emqx_auth_jwt_sup]},
+              {applications,[kernel,stdlib,jwerl,clique]},
+              {mod,{emqx_auth_jwt_app,[]}}]}.

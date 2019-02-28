@@ -31,10 +31,13 @@ init(Env) ->
 check(_Credentials, undefined, _Env) ->
     {error, token_undefined};
 check(_Credentials, Token, Env) ->
-    case catch jwerl:header(Token) of
-        {'EXIT', _} -> ignore; % Not a JWT Token
+    try jwerl:header(Token) of
         Headers ->
             verify_token(Headers, Token, Env)
+    catch
+        _Error:Reason ->
+            logger:error("JWT check error:~p", [Reason]),
+            ignore
     end.
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
@@ -54,14 +57,15 @@ verify_token(Header, _Token, _Env) ->
     {error, token_unsupported}.
 
 verify_token2(Alg, Token, SecretOrKey) ->
-    case catch jwerl:verify(Token, decode_algo(Alg), SecretOrKey) of
+    try jwerl:verify(Token, decode_algo(Alg), SecretOrKey) of
         {ok, _Claims}  ->
             ok;
         {error, Reason} ->
             logger:error("JWT decode error:~p", [Reason]),
-            {error, token_error};
-        {'EXIT', Error} ->
-            logger:error("JWT decode error:~p", [Error]),
+            {error, token_error}
+    catch
+        _Error:Reason ->
+            logger:error("JWT decode error:~p", [Reason]),
             {error, token_error}
     end.
 
