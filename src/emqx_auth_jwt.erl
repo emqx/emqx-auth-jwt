@@ -35,7 +35,7 @@ check(_Credentials, Token, Env) ->
         Headers ->
             verify_token(Headers, Token, Env)
     catch
-        _Error:_Reason ->
+        _Error:Reason ->
             logger:error("JWT check error:~p", [Reason]),
             ignore
     end.
