@@ -16,28 +16,26 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--behaviour(emqx_auth_mod).
-
-%% emqx_auth_mod callbacks
--export([init/1, check/3, description/0]).
-
-%%--------------------------------------------------------------------
-%% emqx_auth_mod Callbacks
-%%--------------------------------------------------------------------
+-export([init/1, check/2, description/0]).
 
 init(Env) ->
     {ok, Env}.
 
-check(_Credentials, undefined, _Env) ->
-    {error, token_undefined};
-check(_Credentials, Token, Env) ->
-    try jwerl:header(Token) of
-        Headers ->
-            verify_token(Headers, Token, Env)
-    catch
-        _Error:Reason ->
-            logger:error("JWT check error:~p", [Reason]),
-            ignore
+check(Credentials, Env = #{from := From}) ->
+    case maps:find(From, Credentials) of
+        error -> {ok, Credentials#{result => token_undefined}};
+        {ok, Token} ->
+            try jwerl:header(Token) of
+                Headers ->
+                    case verify_token(Headers, Token, Env) of
+                        {ok, Claims} -> {stop, Credentials#{result => success, jwt_claims => Claims}};
+                        {error, Reason} -> {stop, Credentials#{result => Reason}}
+                    end
+            catch
+                _Error:Reason ->
+                    logger:error("JWT check error:~p", [Reason]),
+                    ok
+            end
     end.
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
@@ -58,15 +56,13 @@ verify_token(Header, _Token, _Env) ->
 
 verify_token2(Alg, Token, SecretOrKey) ->
     try jwerl:verify(Token, decode_algo(Alg), SecretOrKey) of
-        {ok, _Claims}  ->
-            ok;
+        {ok, Claims}  ->
+            {ok, Claims};
         {error, Reason} ->
-            logger:error("JWT decode error:~p", [Reason]),
-            {error, token_error}
+            {error, Reason}
     catch
         _Error:Reason ->
-            logger:error("JWT decode error:~p", [Reason]),
-            {error, token_error}
+            {error, Reason}
     end.
 
 decode_algo(<<"HS256">>) -> hs256;

@@ -7,6 +7,11 @@
   {datatype, string}
 ]}.
 
+{mapping, "auth.jwt.from", "emqx_auth_jwt.from", [
+  {default, password},
+  {datatype, atom}
+]}.
+
 %% RSA or ECDSA public key file
 {mapping, "auth.jwt.pubkey", "emqx_auth_jwt.pubkey", [
   {datatype, string}

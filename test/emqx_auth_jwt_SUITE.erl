@@ -33,6 +33,7 @@ groups() ->
 init_per_suite(Config) ->
     DataDir = proplists:get_value(data_dir, Config),
     application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password),
     Apps = [start_apps(App, DataDir) || App <- [emqx, emqx_auth_jwt]],
     ct:log("Apps: ~p~n", [Apps]),
     Config.
@@ -46,20 +47,40 @@ check_auth(_) ->
                       {username, <<"plain">>},
                       {exp, os:system_time(seconds) + 1}], hs256, <<"emqxsecret">>),
     ct:pal("Jwt: ~p~n", [Jwt]),
-    ok = emqx_access_control:authenticate(Plain, Jwt),
+
+    Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
+    ct:pal("Auth result: ~p~n", [Result0]),
+    ?assertMatch({ok, #{result := success, jwt_claims := #{client_id := <<"client1">>}}}, Result0),
 
     ct:sleep(1000),
-    {error,token_error} = emqx_access_control:authenticate(Plain, Jwt),
+    Result1 = emqx_access_control:authenticate(Plain#{password => Jwt}),
+    ct:pal("Auth result after 1000ms: ~p~n", [Result1]),
+    ?assertMatch({error, _}, Result1),
 
     Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
                             {username, <<"plain">>}], hs256, <<"secret">>),
-    {error, token_error} = emqx_access_control:authenticate(Plain, Jwt_Error),
-    ?assertEqual(case emqx_config:get_env(allow_anonymous, false) of
-                     true  -> ok;
-                     false -> {error, auth_modules_not_found}
-                 end, emqx_access_control:authenticate(Plain, <<"asd">>)).
+    ct:pal("invalid jwt: ~p~n", [Jwt_Error]),
+    Result2 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
+    ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
+    ?assertEqual({error, invalid_signature}, Result2),
+
+    ?assertMatch({error, _}, emqx_access_control:authenticate(Plain#{password => <<"asd">>})).
+
+get_base_dir() ->
+    {file, Here} = code:is_loaded(?MODULE),
+    filename:dirname(filename:dirname(Here)).
+
+local_path(RelativePath) ->
+    filename:join([get_base_dir(), RelativePath]).
 
 start_apps(App, _DataDir) ->
+    application:set_env(emqx, allow_anonymous, false),
+    application:set_env(emqx, acl_nomatch, deny),
+    application:set_env(emqx, acl_file,
+                        local_path("deps/emqx/test/emqx_SUITE_data/acl.conf")),
+    application:set_env(emqx, enable_acl_cache, false),
+    application:set_env(emqx, plugins_loaded_file,
+                        local_path("deps/emqx/test/emqx_SUITE_data/loaded_plugins")),
     application:ensure_all_started(App).
 %start_apps(App, DataDir) ->
 %    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
