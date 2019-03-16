@@ -16,10 +16,7 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--export([init/1, check/2, description/0]).
-
-init(Env) ->
-    {ok, Env}.
+-export([check/2, description/0]).
 
 check(Credentials, Env = #{from := From}) ->
     case maps:find(From, Credentials) of
