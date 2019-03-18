@@ -22,13 +22,15 @@
 
 -define(APP, emqx_auth_jwt).
 
+-define(JWT_ACTION, {emqx_auth_jwt, check, [auth_env()]}).
+
 start(_Type, _Args) ->
-    emqx_access_control:register_mod(auth, ?APP, auth_env()),
+    emqx:hook('client.authenticate', ?JWT_ACTION),
     emqx_auth_jwt_cfg:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 stop(_State) ->
-    emqx_access_control:unregister_mod(auth, ?APP),
+    emqx:unhook('client.authenticate', ?JWT_ACTION),
     emqx_auth_jwt_cfg:unregister().
 
 %%--------------------------------------------------------------------
@@ -44,6 +46,7 @@ init([]) ->
 
 auth_env() ->
     #{secret => application:get_env(?APP, secret, undefined),
+      from => application:get_env(?APP, from, password),
       pubkey => read_pubkey()}.
 
 read_pubkey() ->
