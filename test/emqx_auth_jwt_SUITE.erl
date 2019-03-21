@@ -50,7 +50,7 @@ check_auth(_) ->
 
     Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
     ct:pal("Auth result: ~p~n", [Result0]),
-    ?assertMatch({ok, #{result := success, jwt_claims := #{client_id := <<"client1">>}}}, Result0),
+    ?assertMatch({ok, #{auth_result := success, jwt_claims := #{client_id := <<"client1">>}}}, Result0),
 
     ct:sleep(3100),
     Result1 = emqx_access_control:authenticate(Plain#{password => Jwt}),
