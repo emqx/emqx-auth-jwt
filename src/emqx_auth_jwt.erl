@@ -20,13 +20,13 @@
 
 check(Credentials, Env = #{from := From}) ->
     case maps:find(From, Credentials) of
-        error -> {ok, Credentials#{result => token_undefined}};
+        error -> {ok, Credentials#{auth_result => token_undefined}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
-                        {ok, Claims} -> {stop, Credentials#{result => success, jwt_claims => Claims}};
-                        {error, Reason} -> {stop, Credentials#{result => Reason}}
+                        {ok, Claims} -> {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
+                        {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
                     end
             catch
                 _Error:Reason ->
