@@ -45,14 +45,14 @@ check_auth(_) ->
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client1">>},
                       {username, <<"plain">>},
-                      {exp, os:system_time(seconds) + 1}], hs256, <<"emqxsecret">>),
+                      {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
     ct:pal("Jwt: ~p~n", [Jwt]),
 
     Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
     ct:pal("Auth result: ~p~n", [Result0]),
-    ?assertMatch({ok, #{result := success, jwt_claims := #{client_id := <<"client1">>}}}, Result0),
+    ?assertMatch({ok, #{auth_result := success, jwt_claims := #{client_id := <<"client1">>}}}, Result0),
 
-    ct:sleep(1000),
+    ct:sleep(3100),
     Result1 = emqx_access_control:authenticate(Plain#{password => Jwt}),
     ct:pal("Auth result after 1000ms: ~p~n", [Result1]),
     ?assertMatch({error, _}, Result1),
