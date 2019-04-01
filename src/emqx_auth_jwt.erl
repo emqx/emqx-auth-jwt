@@ -16,16 +16,18 @@
 
 -include_lib("emqx/include/emqx.hrl").
 
--export([check/2, description/0]).
+-export([ check/2
+        , description/0
+        , handler_verify_payload/3]).
 
-check(Credentials, Env = #{from := From}) ->
+check(Credentials, Env = #{from := From, verify_payload := VerifyKey}) ->
     case maps:find(From, Credentials) of
         error -> {ok, Credentials#{auth_result => token_undefined}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
-                        {ok, Claims} -> {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
+                        {ok, Claims} -> verify_payload(decode_payload(Token), Credentials, VerifyKey, Claims);
                         {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
                     end
             catch
@@ -62,6 +64,29 @@ verify_token2(Alg, Token, SecretOrKey) ->
             {error, Reason}
     end.
 
+verify_payload(_Payload, Credentials, undefined, Claims) ->
+    {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
+verify_payload(Payload, Credentials, VerifyKey, Claims) ->
+    case handler_verify_payload(Payload, VerifyKey, Credentials) of
+        true -> {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
+        false -> {stop, Credentials#{auth_result => {error, fail_verify_payload}}}
+    end.
+
+handler_verify_payload(_PayloadInfo, [], _Credentials) ->
+    false;
+handler_verify_payload(PayloadInfo, [{Key, Value} | WaitVerifyData], Credentials) ->
+    case lists:keyfind(Key, 1, PayloadInfo) of
+        false -> handler_verify_payload(PayloadInfo, WaitVerifyData, Credentials);
+        {_, PayloadValue} -> do_verify_payload(PayloadValue, Credentials, Value)
+    end.
+
+do_verify_payload(PayloadValue, #{username := Username}, <<"%u">>) ->
+    PayloadValue =:= Username;
+do_verify_payload(PayloadValue, #{client_id:= ClientId}, <<"%c">>) ->
+    PayloadValue =:= ClientId;
+do_verify_payload(PayloadValue, _Credentials, Value) ->
+    PayloadValue =:= Value.
+
 decode_algo(<<"HS256">>) -> hs256;
 decode_algo(<<"HS384">>) -> hs384;
 decode_algo(<<"HS512">>) -> hs512;
@@ -75,3 +100,20 @@ decode_algo(<<"none">>)  -> none;
 decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 
 description() -> "Authentication with JWT".
+
+decode_payload(Token) ->
+    [_Header, Payload, _Hash]= binary:split(Token, <<".">>, [global]),
+    emqx_json:decode(base64_decode(Payload)).
+
+base64_decode(Data) ->
+        Data1 = << << (urldecode_digit(D)) >> || <<D>> <= Data >>,
+        Data2 = case byte_size(Data1) rem 4 of
+                    2 -> <<Data1/binary, "==">>;
+                    3 -> <<Data1/binary, "=">>;
+                    _ -> Data1
+                end,
+        base64:decode(Data2).
+
+urldecode_digit($_) -> $/;
+urldecode_digit($-) -> $+;
+urldecode_digit(D)  -> D.

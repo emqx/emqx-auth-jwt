@@ -17,3 +17,27 @@
   {datatype, string}
 ]}.
 
+%% Whether to open payload validation
+{mapping, "auth.jwt.verify_payload", "emqx_auth_jwt.verify_payload", [
+  {default, off},
+  {datatype, flag}
+]}.
+
+%% Verify payload content configuration information
+{mapping, "auth.jwt.verify_payload.$name", "emqx_auth_jwt.verify_payload", [
+  {datatype, string}
+]}.
+
+{translation, "emqx_auth_jwt.verify_payload", fun(Conf) ->
+   case cuttlefish:conf_get("auth.jwt.verify_payload", Conf) of
+    false -> cuttlefish:unset();
+    true  ->
+            lists:foldl(
+                       fun({["auth","jwt","verify_payload", Name], Value}, Acc) ->
+                              [{list_to_atom(Name), list_to_binary(Value)} | Acc];
+                          ({["auth","jwt","verify_payload"], Value}, Acc) ->
+                              Acc
+                      end,
+                      [], cuttlefish_variable:filter_by_prefix("auth.jwt.verify_payload", Conf))
+  end
+end}.

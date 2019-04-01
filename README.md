@@ -25,6 +25,20 @@ auth.jwt.secret = emqsecret
 ##
 ## Value: File
 ## auth.jwt.pubkey = etc/certs/jwt_public_key.pem
+
+## Whether to open payload validation
+##
+## Value: on | off
+auth.jwt.verify_payload = off
+
+## Verify payload content configuration information
+##
+## Value: String
+## auth.jwt.verify_payload.$sub = %c
+## auth.jwt.verify_payload.$name = %u
+## auth.jwt.verify_payload.$name = secret
+
+
 ```
 
 Load the Plugin

@@ -28,18 +28,16 @@ all() ->
     [{group, emqx_auth_jwt}].
 
 groups() ->
-    [{emqx_auth_jwt, [sequence], [check_auth]}].
+    [{emqx_auth_jwt, [sequence], [check_auth, check_payload, check_payload_clientid, check_payload_username]}].
 
 init_per_suite(Config) ->
-    DataDir = proplists:get_value(data_dir, Config),
-    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
-    application:set_env(emqx_auth_jwt, from, password),
-    Apps = [start_apps(App, DataDir) || App <- [emqx, emqx_auth_jwt]],
-    ct:log("Apps: ~p~n", [Apps]),
+    emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], [{acl_file, emqx, "test/emqx_SUITE_data/acl.conf"},
+                                                       {plugins_loaded_file, emqx, "test/emqx_SUITE_data/loaded_plugins"}]),
+    init_env(),
     Config.
 
 end_per_suite(_Config) ->
-    [application:stop(App) || App <- [emqx_auth_jwt, emqx]].
+    emqx_ct_helpers:stop_apps([emqx_auth_jwt, emqx]).
 
 check_auth(_) ->
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
@@ -63,29 +61,69 @@ check_auth(_) ->
     Result2 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
     ?assertEqual({error, invalid_signature}, Result2),
-
     ?assertMatch({error, _}, emqx_access_control:authenticate(Plain#{password => <<"asd">>})).
 
-get_base_dir() ->
-    {file, Here} = code:is_loaded(?MODULE),
-    filename:dirname(filename:dirname(Here)).
+check_payload(_) ->
+    application:stop(emqx_auth_jwt),
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password),
+    application:set_env(emqx_auth_jwt, verify_payload, [{<<"sub">>, <<"value">>}]),
+    ok = application:start(emqx_auth_jwt),
+    Plain = #{client_id => <<"client1">>, username => <<"plain">>},
+    Jwt = jwerl:sign([{client_id, <<"client1">>},
+                      {username, <<"plain">>},
+                      {sub, value},
+                      {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
+    Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
+    ct:pal("Auth result: ~p~n", [Result0]),
+    ?assertMatch({ok, #{auth_result := success, jwt_claims := _}}, Result0),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
+                            {username, <<"plain">>}], hs256, <<"secret">>),
+    Result2 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
+    ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
+    ?assertEqual({error, invalid_signature}, Result2).
 
-local_path(RelativePath) ->
-    filename:join([get_base_dir(), RelativePath]).
+check_payload_clientid(_) ->
+    application:stop(emqx_auth_jwt),
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password),
+    application:set_env(emqx_auth_jwt, verify_payload, [{<<"client_id">>, <<"%c">>}]),
+    ok = application:start(emqx_auth_jwt),
+    Plain = #{client_id => <<"client23">>, username => <<"plain">>},
+    Jwt = jwerl:sign([{client_id, <<"client23">>},
+                      {username, <<"plain">>},
+                      {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
+    Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
+    ct:pal("Auth result: ~p~n", [Result0]),
+    ?assertMatch({ok, #{auth_result := success, jwt_claims := _}}, Result0),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
+                            {username, <<"plain">>}], hs256, <<"secret">>),
+    Result2 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
+    ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
+    ?assertEqual({error, invalid_signature}, Result2).
 
-start_apps(App, _DataDir) ->
+check_payload_username(_) ->
+    application:stop(emqx_auth_jwt),
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password),
+    application:set_env(emqx_auth_jwt, verify_payload, [{<<"username">>, <<"%u">>}]),
+    ok = application:start(emqx_auth_jwt),
+    Plain = #{client_id => <<"client23">>, username => <<"plain">>},
+    Jwt = jwerl:sign([{client_id, <<"client23">>},
+                      {username, <<"plain">>},
+                      {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
+    Result0 = emqx_access_control:authenticate(Plain#{password => Jwt}),
+    ct:pal("Auth result: ~p~n", [Result0]),
+    ?assertMatch({ok, #{auth_result := success, jwt_claims := _}}, Result0),
+    Jwt_Error = jwerl:sign([{client_id, <<"client1">>},
+                            {username, <<"plain">>}], hs256, <<"secret">>),
+    Result3 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
+    ct:pal("Auth result for the invalid jwt: ~p~n", [Result3]),
+    ?assertEqual({error, invalid_signature}, Result3).
+
+init_env() ->
     application:set_env(emqx, allow_anonymous, false),
     application:set_env(emqx, acl_nomatch, deny),
-    application:set_env(emqx, acl_file,
-                        local_path("deps/emqx/test/emqx_SUITE_data/acl.conf")),
     application:set_env(emqx, enable_acl_cache, false),
-    application:set_env(emqx, plugins_loaded_file,
-                        local_path("deps/emqx/test/emqx_SUITE_data/loaded_plugins")),
-    application:ensure_all_started(App).
-%start_apps(App, DataDir) ->
-%    Schema = cuttlefish_schema:files([filename:join([DataDir, atom_to_list(App) ++ ".schema"])]),
-%    Conf = conf_parse:file(filename:join([DataDir, atom_to_list(App) ++ ".conf"])),
-%    NewConfig = cuttlefish_generator:map(Schema, Conf),
-%    Vals = proplists:get_value(App, NewConfig),
-%    [application:set_env(App, Par, Value) || {Par, Value} <- Vals],
-%    application:ensure_all_started(App).
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password).

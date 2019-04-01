@@ -49,7 +49,8 @@ init([]) ->
 auth_env() ->
     #{secret => application:get_env(?APP, secret, undefined),
       from => application:get_env(?APP, from, password),
-      pubkey => read_pubkey()}.
+      pubkey => read_pubkey(),
+      verify_payload => application:get_env(?APP, verify_payload, undefined)}.
 
 read_pubkey() ->
     case application:get_env(?APP, pubkey) of
