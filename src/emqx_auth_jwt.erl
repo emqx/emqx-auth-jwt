@@ -20,14 +20,14 @@
         , description/0
         , handler_verify_payload/3]).
 
-check(Credentials, Env = #{from := From, verify_payload := VerifyKey}) ->
+check(Credentials, Env = #{from := From, verify_payload := VerifyFlag}) ->
     case maps:find(From, Credentials) of
         error -> {ok, Credentials#{auth_result => token_undefined}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
-                        {ok, Claims} -> verify_payload(decode_payload(Token), Credentials, VerifyKey, Claims);
+                        {ok, Claims} -> verify_payload(decode_payload(Token), Credentials, VerifyFlag, Claims);
                         {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
                     end
             catch
@@ -66,8 +66,8 @@ verify_token2(Alg, Token, SecretOrKey) ->
 
 verify_payload(_Payload, Credentials, undefined, Claims) ->
     {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
-verify_payload(Payload, Credentials, VerifyKey, Claims) ->
-    case handler_verify_payload(Payload, VerifyKey, Credentials) of
+verify_payload(Payload, Credentials, VerifyFlag, Claims) ->
+    case handler_verify_payload(Payload, VerifyFlag, Credentials) of
         true -> {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
         false -> {stop, Credentials#{auth_result => {error, fail_verify_payload}}}
     end.
@@ -106,13 +106,13 @@ decode_payload(Token) ->
     emqx_json:decode(base64_decode(Payload)).
 
 base64_decode(Data) ->
-        Data1 = << << (urldecode_digit(D)) >> || <<D>> <= Data >>,
-        Data2 = case byte_size(Data1) rem 4 of
-                    2 -> <<Data1/binary, "==">>;
-                    3 -> <<Data1/binary, "=">>;
-                    _ -> Data1
-                end,
-        base64:decode(Data2).
+    Data1 = << << (urldecode_digit(D)) >> || <<D>> <= Data >>,
+    Data2 = case byte_size(Data1) rem 4 of
+                2 -> <<Data1/binary, "==">>;
+                3 -> <<Data1/binary, "=">>;
+                _ -> Data1
+            end,
+    base64:decode(Data2).
 
 urldecode_digit($_) -> $/;
 urldecode_digit($-) -> $+;
