@@ -19,26 +19,33 @@ File: etc/plugins/emqx_auth_jwt.conf
 ## HMAC Hash Secret.
 ##
 ## Value: String
-auth.jwt.secret = emqsecret
+auth.jwt.secret = emqxsecret
+
+## From where the JWT string can be got
+##
+## Value: username | password
+## Default: password
+auth.jwt.from = password
 
 ## RSA or ECDSA public key file.
 ##
 ## Value: File
 ## auth.jwt.pubkey = etc/certs/jwt_public_key.pem
 
-## Whether to open payload validation
+## Enable to verify claims fields
 ##
 ## Value: on | off
-auth.jwt.verify_payload = off
+auth.jwt.verify_claims = off
 
-## Verify payload content configuration information
+## The checklist of claims to validate
 ##
 ## Value: String
-## auth.jwt.verify_payload.$sub = %c
-## auth.jwt.verify_payload.$name = %u
-## auth.jwt.verify_payload.$name = secret
-
-
+## auth.jwt.verify_claims.$name = expected
+##
+## Variables:
+##  - %u: username
+##  - %c: clientid
+# auth.jwt.verify_claims.username = %u
 ```
 
 Load the Plugin
