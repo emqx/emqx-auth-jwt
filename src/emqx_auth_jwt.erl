@@ -15,27 +15,38 @@
 -module(emqx_auth_jwt).
 
 -include_lib("emqx/include/emqx.hrl").
+-include_lib("emqx/include/logger.hrl").
 
 -export([ check/2
         , description/0
-        , handler_verify_payload/3]).
+        ]).
 
-check(Credentials, Env = #{from := From, verify_payload := VerifyFlag}) ->
+%%------------------------------------------------------------------------------
+%% Authentication callbacks
+%%------------------------------------------------------------------------------
+
+check(Credentials, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
         error -> {ok, Credentials#{auth_result => token_undefined}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
-                        {ok, Claims} -> verify_payload(decode_payload(Token), Credentials, VerifyFlag, Claims);
+                        {ok, Claims} ->
+                            verify_claims(Checklists, Claims, Credentials);
                         {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
                     end
             catch
                 _Error:Reason ->
-                    logger:error("JWT check error:~p", [Reason]),
-                    ok
+                    ?LOG(error, "[JWT] Check token error: ~p", [Reason]), ok
             end
     end.
+
+description() -> "Authentication with JWT".
+
+%%------------------------------------------------------------------------------
+%% Verify Token
+%%------------------------------------------------------------------------------
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
@@ -50,7 +61,7 @@ verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
 verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
     verify_token2(Alg, Token, PubKey);
 verify_token(Header, _Token, _Env) ->
-    logger:error("Unsupported token: ~p", [Header]),
+    ?LOG(error, "[JWT] Unsupported token algorithm: ~p", [Header]),
     {error, token_unsupported}.
 
 verify_token2(Alg, Token, SecretOrKey) ->
@@ -64,29 +75,6 @@ verify_token2(Alg, Token, SecretOrKey) ->
             {error, Reason}
     end.
 
-verify_payload(_Payload, Credentials, undefined, Claims) ->
-    {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
-verify_payload(Payload, Credentials, VerifyFlag, Claims) ->
-    case handler_verify_payload(Payload, VerifyFlag, Credentials) of
-        true -> {stop, Credentials#{auth_result => success, jwt_claims => Claims}};
-        false -> {stop, Credentials#{auth_result => {error, fail_verify_payload}}}
-    end.
-
-handler_verify_payload(_PayloadInfo, [], _Credentials) ->
-    false;
-handler_verify_payload(PayloadInfo, [{Key, Value} | WaitVerifyData], Credentials) ->
-    case lists:keyfind(Key, 1, PayloadInfo) of
-        false -> handler_verify_payload(PayloadInfo, WaitVerifyData, Credentials);
-        {_, PayloadValue} -> do_verify_payload(PayloadValue, Credentials, Value)
-    end.
-
-do_verify_payload(PayloadValue, #{username := Username}, <<"%u">>) ->
-    PayloadValue =:= Username;
-do_verify_payload(PayloadValue, #{client_id:= ClientId}, <<"%c">>) ->
-    PayloadValue =:= ClientId;
-do_verify_payload(PayloadValue, _Credentials, Value) ->
-    PayloadValue =:= Value.
-
 decode_algo(<<"HS256">>) -> hs256;
 decode_algo(<<"HS384">>) -> hs384;
 decode_algo(<<"HS512">>) -> hs512;
@@ -99,21 +87,29 @@ decode_algo(<<"ES512">>) -> es512;
 decode_algo(<<"none">>)  -> none;
 decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 
-description() -> "Authentication with JWT".
+%%------------------------------------------------------------------------------
+%% Verify Claims
+%%------------------------------------------------------------------------------
 
-decode_payload(Token) ->
-    [_Header, Payload, _Hash]= binary:split(Token, <<".">>, [global]),
-    emqx_json:decode(base64_decode(Payload)).
+verify_claims(Checklists, Claims, Credentials) ->
+    case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
+        {error, Reason} ->
+            {stop, Credentials#{auth_result => {error, Reason}}};
+        ok ->
+            {stop, Credentials#{auth_result => success, jwt_claims => Claims}}
+    end.
 
-base64_decode(Data) ->
-    Data1 = << << (urldecode_digit(D)) >> || <<D>> <= Data >>,
-    Data2 = case byte_size(Data1) rem 4 of
-                2 -> <<Data1/binary, "==">>;
-                3 -> <<Data1/binary, "=">>;
-                _ -> Data1
-            end,
-    base64:decode(Data2).
+do_verify_claims([], _Claims) ->
+    ok;
+do_verify_claims([{Key, Expected} | L], Claims) ->
+    case maps:get(Key, Claims, undefined) =:= Expected of
+        true -> do_verify_claims(L, Claims);
+        false -> {error, list_to_atom("unexpected_" ++ atom_to_list(Key))}
+    end.
 
-urldecode_digit($_) -> $/;
-urldecode_digit($-) -> $+;
-urldecode_digit(D)  -> D.
+feedvar(Checklists, #{username := Username, client_id := ClientId}) ->
+    lists:map(fun({K, <<"%u">>}) -> {K, Username};
+                 ({K, <<"%c">>}) -> {K, ClientId};
+                 ({K, Expected}) -> {K, Expected}
+              end, Checklists).
+

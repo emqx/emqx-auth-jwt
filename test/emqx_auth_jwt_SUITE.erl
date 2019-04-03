@@ -28,7 +28,7 @@ all() ->
     [{group, emqx_auth_jwt}].
 
 groups() ->
-    [{emqx_auth_jwt, [sequence], [check_auth, check_payload, check_payload_clientid, check_payload_username]}].
+    [{emqx_auth_jwt, [sequence], [check_auth, check_claims, check_claims_clientid, check_claims_username]}].
 
 init_per_suite(Config) ->
     emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], [{acl_file, emqx, "test/emqx_SUITE_data/acl.conf"},
@@ -63,11 +63,11 @@ check_auth(_) ->
     ?assertEqual({error, invalid_signature}, Result2),
     ?assertMatch({error, _}, emqx_access_control:authenticate(Plain#{password => <<"asd">>})).
 
-check_payload(_) ->
+check_claims(_) ->
     application:stop(emqx_auth_jwt),
     application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
     application:set_env(emqx_auth_jwt, from, password),
-    application:set_env(emqx_auth_jwt, verify_payload, [{<<"sub">>, <<"value">>}]),
+    application:set_env(emqx_auth_jwt, verify_claims, [{sub, <<"value">>}]),
     ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client1">>},
@@ -83,11 +83,11 @@ check_payload(_) ->
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
     ?assertEqual({error, invalid_signature}, Result2).
 
-check_payload_clientid(_) ->
+check_claims_clientid(_) ->
     application:stop(emqx_auth_jwt),
     application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
     application:set_env(emqx_auth_jwt, from, password),
-    application:set_env(emqx_auth_jwt, verify_payload, [{<<"client_id">>, <<"%c">>}]),
+    application:set_env(emqx_auth_jwt, verify_claims, [{client_id, <<"%c">>}]),
     ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client23">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client23">>},
@@ -102,11 +102,11 @@ check_payload_clientid(_) ->
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
     ?assertEqual({error, invalid_signature}, Result2).
 
-check_payload_username(_) ->
+check_claims_username(_) ->
     application:stop(emqx_auth_jwt),
     application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
     application:set_env(emqx_auth_jwt, from, password),
-    application:set_env(emqx_auth_jwt, verify_payload, [{<<"username">>, <<"%u">>}]),
+    application:set_env(emqx_auth_jwt, verify_claims, [{username, <<"%u">>}]),
     ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client23">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client23">>},

@@ -1,8 +1,5 @@
-%%-------------------------------------------------------------------
-%% JWT Auth Plugin
-%%-------------------------------------------------------------------
+%%-*- mode: erlang -*-
 
-%% HMAC hash Secret
 {mapping, "auth.jwt.secret", "emqx_auth_jwt.secret", [
   {datatype, string}
 ]}.
@@ -12,32 +9,29 @@
   {datatype, atom}
 ]}.
 
-%% RSA or ECDSA public key file
 {mapping, "auth.jwt.pubkey", "emqx_auth_jwt.pubkey", [
   {datatype, string}
 ]}.
 
-%% Whether to open payload validation
-{mapping, "auth.jwt.verify_payload", "emqx_auth_jwt.verify_payload", [
+{mapping, "auth.jwt.verify_claims", "emqx_auth_jwt.verify_claims", [
   {default, off},
   {datatype, flag}
 ]}.
 
-%% Verify payload content configuration information
-{mapping, "auth.jwt.verify_payload.$name", "emqx_auth_jwt.verify_payload", [
+{mapping, "auth.jwt.verify_claims.$name", "emqx_auth_jwt.verify_claims", [
   {datatype, string}
 ]}.
 
-{translation, "emqx_auth_jwt.verify_payload", fun(Conf) ->
-   case cuttlefish:conf_get("auth.jwt.verify_payload", Conf) of
-    false -> cuttlefish:unset();
-    true  ->
-            lists:foldl(
-                       fun({["auth","jwt","verify_payload", Name], Value}, Acc) ->
-                              [{list_to_atom(Name), list_to_binary(Value)} | Acc];
-                          ({["auth","jwt","verify_payload"], Value}, Acc) ->
-                              Acc
-                       end,
-                      [], cuttlefish_variable:filter_by_prefix("auth.jwt.verify_payload", Conf))
+{translation, "emqx_auth_jwt.verify_claims", fun(Conf) ->
+    case cuttlefish:conf_get("auth.jwt.verify_claims", Conf) of
+        false -> cuttlefish:unset();
+        true ->
+            lists:foldr(
+              fun({["auth","jwt","verify_claims", Name], Value}, Acc) ->
+                      [{list_to_atom(Name), list_to_binary(Value)} | Acc];
+                 ({["auth","jwt","verify_claims"], _Value}, Acc) ->
+                      Acc
+              end, [], cuttlefish_variable:filter_by_prefix("auth.jwt.verify_claims", Conf))
    end
 end}.
+
