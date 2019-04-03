@@ -14,7 +14,17 @@
 
 -module(emqx_auth_jwt_SUITE).
 
--compile(export_all).
+-export([ all/0
+        , groups/0
+        , init_per_suite/1
+        , end_per_suite/1
+        ]).
+
+-export([ t_check_auth/1
+        , t_check_claims/1
+        , t_check_claims_clientid/1
+        , t_check_claims_username/1
+        ]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -28,7 +38,12 @@ all() ->
     [{group, emqx_auth_jwt}].
 
 groups() ->
-    [{emqx_auth_jwt, [sequence], [check_auth, check_claims, check_claims_clientid, check_claims_username]}].
+    [{emqx_auth_jwt, [sequence], [ t_check_auth
+                                 , t_check_claims
+                                 , t_check_claims_clientid
+                                 , t_check_claims_username
+                                 ]}
+    ].
 
 init_per_suite(Config) ->
     emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], [{acl_file, emqx, "test/emqx_SUITE_data/acl.conf"},
@@ -39,7 +54,11 @@ init_per_suite(Config) ->
 end_per_suite(_Config) ->
     emqx_ct_helpers:stop_apps([emqx_auth_jwt, emqx]).
 
-check_auth(_) ->
+%%------------------------------------------------------------------------------
+%% Testcases
+%%------------------------------------------------------------------------------
+
+t_check_auth(_) ->
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client1">>},
                       {username, <<"plain">>},
@@ -63,12 +82,8 @@ check_auth(_) ->
     ?assertEqual({error, invalid_signature}, Result2),
     ?assertMatch({error, _}, emqx_access_control:authenticate(Plain#{password => <<"asd">>})).
 
-check_claims(_) ->
-    application:stop(emqx_auth_jwt),
-    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
-    application:set_env(emqx_auth_jwt, from, password),
+t_check_claims(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{sub, <<"value">>}]),
-    ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client1">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client1">>},
                       {username, <<"plain">>},
@@ -83,12 +98,8 @@ check_claims(_) ->
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
     ?assertEqual({error, invalid_signature}, Result2).
 
-check_claims_clientid(_) ->
-    application:stop(emqx_auth_jwt),
-    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
-    application:set_env(emqx_auth_jwt, from, password),
+t_check_claims_clientid(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{client_id, <<"%c">>}]),
-    ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client23">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client23">>},
                       {username, <<"plain">>},
@@ -102,12 +113,8 @@ check_claims_clientid(_) ->
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result2]),
     ?assertEqual({error, invalid_signature}, Result2).
 
-check_claims_username(_) ->
-    application:stop(emqx_auth_jwt),
-    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
-    application:set_env(emqx_auth_jwt, from, password),
+t_check_claims_username(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{username, <<"%u">>}]),
-    ok = application:start(emqx_auth_jwt),
     Plain = #{client_id => <<"client23">>, username => <<"plain">>},
     Jwt = jwerl:sign([{client_id, <<"client23">>},
                       {username, <<"plain">>},
@@ -127,3 +134,4 @@ init_env() ->
     application:set_env(emqx, enable_acl_cache, false),
     application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
     application:set_env(emqx_auth_jwt, from, password).
+
