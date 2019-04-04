@@ -15,11 +15,13 @@
 -module(emqx_auth_jwt_app).
 
 -behaviour(application).
+
 -behaviour(supervisor).
 
 -emqx_plugin(?MODULE).
 
 -export([start/2, stop/1]).
+
 -export([init/1]).
 
 -define(APP, emqx_auth_jwt).
@@ -47,14 +49,19 @@ init([]) ->
 %%--------------------------------------------------------------------
 
 auth_env() ->
-    #{secret => application:get_env(?APP, secret, undefined),
-      from => application:get_env(?APP, from, password),
-      pubkey => read_pubkey()}.
+    #{ secret => env(secret, undefined)
+     , from => env(from, password)
+     , pubkey => read_pubkey()
+     , checklists => env(verify_claims, [])
+     }.
 
 read_pubkey() ->
-    case application:get_env(?APP, pubkey) of
+    case env(pubkey, undefined) of
         undefined  -> undefined;
-        {ok, Path} -> {ok, PubKey} = file:read_file(Path),
-                      PubKey
+        {ok, Path} ->
+            {ok, PubKey} = file:read_file(Path), PubKey
     end.
+
+env(Key, Default) ->
+    application:get_env(?APP, Key, Default).
 
