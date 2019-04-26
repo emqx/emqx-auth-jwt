@@ -18,7 +18,7 @@ dep_emqx = git-emqx https://github.com/emqx/emqx $(BRANCH)
 dep_cuttlefish = git-emqx https://github.com/emqx/cuttlefish v2.2.1
 
 TEST_DEPS = emqx_ct_helper
-dep_emqx_ct_helper = git-emqx https://github.com/emqx/emqx-ct-helpers $(BRANCH)
+dep_emqx_ct_helper = git-emqx https://github.com/emqx/emqx-ct-helpers v1.0
 
 ERLC_OPTS += +debug_info
 
