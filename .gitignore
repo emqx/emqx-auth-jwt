@@ -19,4 +19,8 @@ logs/
 test/ct.cover.spec
 emq_auth_jwt.d
 erlang.mk
+_build/
+rebar.lock
+rebar3.crashdump
+etc/emqx_auth_jwt.conf.rendered
 
