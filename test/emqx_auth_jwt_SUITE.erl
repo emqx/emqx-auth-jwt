@@ -46,13 +46,29 @@ groups() ->
     ].
 
 init_per_suite(Config) ->
-    emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], [{acl_file, emqx, "test/emqx_SUITE_data/acl.conf"},
-                                                       {plugins_loaded_file, emqx, "test/emqx_SUITE_data/loaded_plugins"}]),
-    init_env(),
+    emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], fun set_special_configs/1),
     Config.
 
 end_per_suite(_Config) ->
     emqx_ct_helpers:stop_apps([emqx_auth_jwt, emqx]).
+
+set_special_configs(emqx) ->
+    application:set_env(emqx, allow_anonymous, false),
+    application:set_env(emqx, acl_nomatch, deny),
+    application:set_env(emqx, enable_acl_cache, false),
+    LoadedPluginPath = filename:join(["test", "emqx_SUITE_data", "loaded_plugins"]),
+    AclFilePath = filename:join(["test", "emqx_SUITE_data", "acl.conf"]),
+    application:set_env(emqx, plugins_loaded_file,
+                        emqx_ct_helpers:deps_path(emqx, LoadedPluginPath)),
+    application:set_env(emqx, acl_file,
+                        emqx_ct_helpers:deps_path(emqx, AclFilePath));
+
+set_special_configs(emqx_auth_jwt) ->
+    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
+    application:set_env(emqx_auth_jwt, from, password);
+
+set_special_configs(_) ->
+    ok.
 
 %%------------------------------------------------------------------------------
 %% Testcases
@@ -127,11 +143,4 @@ t_check_claims_username(_) ->
     Result3 = emqx_access_control:authenticate(Plain#{password => Jwt_Error}),
     ct:pal("Auth result for the invalid jwt: ~p~n", [Result3]),
     ?assertEqual({error, invalid_signature}, Result3).
-
-init_env() ->
-    application:set_env(emqx, allow_anonymous, false),
-    application:set_env(emqx, acl_nomatch, deny),
-    application:set_env(emqx, enable_acl_cache, false),
-    application:set_env(emqx_auth_jwt, secret, "emqxsecret"),
-    application:set_env(emqx_auth_jwt, from, password).
 
