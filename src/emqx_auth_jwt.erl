@@ -23,7 +23,7 @@
         ]).
 
 register_metrics() ->
-    [emqx_metrics:new(MetricName) || MetricName <- ['auth.jwt.succeed', 'auth.jwt.fail', 'auth.jwt.ignore']].
+    [emqx_metrics:new(MetricName) || MetricName <- ['auth.jwt.success', 'auth.jwt.failure', 'auth.jwt.ignore']].
 
 %%------------------------------------------------------------------------------
 %% Authentication callbacks
@@ -41,7 +41,7 @@ check(Credentials, Env = #{from := From, checklists := Checklists}) ->
                         {ok, Claims} ->
                             verify_claims(Checklists, Claims, Credentials);
                         {error, Reason} ->
-                            emqx_metrics:inc('auth.jwt.fail'),
+                            emqx_metrics:inc('auth.jwt.failure'),
                             {stop, Credentials#{auth_result => Reason}}
                     end
             catch
@@ -103,10 +103,10 @@ decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 verify_claims(Checklists, Claims, Credentials) ->
     case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
         {error, Reason} ->
-            emqx_metrics:inc('auth.jwt.fail'),
+            emqx_metrics:inc('auth.jwt.failure'),
             {stop, Credentials#{auth_result => {error, Reason}}};
         ok ->
-            emqx_metrics:inc('auth.jwt.succeed'),
+            emqx_metrics:inc('auth.jwt.success'),
             {stop, Credentials#{auth_result => success, jwt_claims => Claims}}
     end.
 
