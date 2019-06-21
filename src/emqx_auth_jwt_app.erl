@@ -18,7 +18,7 @@
 
 -behaviour(supervisor).
 
--emqx_plugin(?MODULE).
+-emqx_plugin(auth).
 
 -export([start/2, stop/1]).
 
