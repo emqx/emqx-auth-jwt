@@ -18,7 +18,7 @@
 
 -behaviour(supervisor).
 
--emqx_plugin(?MODULE).
+-emqx_plugin(auth).
 
 -export([start/2, stop/1]).
 
@@ -29,6 +29,7 @@
 -define(JWT_ACTION, {emqx_auth_jwt, check, [auth_env()]}).
 
 start(_Type, _Args) ->
+    emqx_auth_jwt:register_metrics(),
     emqx:hook('client.authenticate', ?JWT_ACTION),
     emqx_auth_jwt_cfg:register(),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
