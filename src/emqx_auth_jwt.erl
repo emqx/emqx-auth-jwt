@@ -27,14 +27,14 @@
 
 check(Credentials, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
-        error -> {ok, Credentials#{auth_result => token_undefined}};
+        error -> {ok, Credentials#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
                         {ok, Claims} ->
                             verify_claims(Checklists, Claims, Credentials);
-                        {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
+                        {error, Reason} -> {stop, Credentials#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
@@ -94,9 +94,11 @@ decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 verify_claims(Checklists, Claims, Credentials) ->
     case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
         {error, Reason} ->
-            {stop, Credentials#{auth_result => {error, Reason}}};
+            {stop, Credentials#{auth_result => {error, Reason}, anonymous => false}};
         ok ->
-            {stop, Credentials#{auth_result => success, jwt_claims => Claims}}
+            {stop, Credentials#{jwt_claims => Claims,
+                                anonymous => false,
+                                auth_result => success}}
     end.
 
 do_verify_claims([], _Claims) ->
