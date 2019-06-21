@@ -33,7 +33,7 @@ check(Credentials, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
         error ->
             emqx_metrics:inc('auth.jwt.ignore'),
-            {ok, Credentials#{auth_result => token_undefined}};
+            {ok, Credentials#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
@@ -42,7 +42,7 @@ check(Credentials, Env = #{from := From, checklists := Checklists}) ->
                             verify_claims(Checklists, Claims, Credentials);
                         {error, Reason} ->
                             emqx_metrics:inc('auth.jwt.failure'),
-                            {stop, Credentials#{auth_result => Reason}}
+                            {stop, Credentials#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
@@ -104,10 +104,12 @@ verify_claims(Checklists, Claims, Credentials) ->
     case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
         {error, Reason} ->
             emqx_metrics:inc('auth.jwt.failure'),
-            {stop, Credentials#{auth_result => {error, Reason}}};
+            {stop, Credentials#{auth_result => {error, Reason}, anonymous => false}};
         ok ->
             emqx_metrics:inc('auth.jwt.success'),
-            {stop, Credentials#{auth_result => success, jwt_claims => Claims}}
+            {stop, Credentials#{jwt_claims => Claims,
+                                anonymous => false,
+                                auth_result => success}}
     end.
 
 do_verify_claims([], _Claims) ->
