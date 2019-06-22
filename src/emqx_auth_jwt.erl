@@ -17,9 +17,13 @@
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
 
--export([ check/2
+-export([ register_metrics/0
+        , check/2
         , description/0
         ]).
+
+register_metrics() ->
+    [emqx_metrics:new(MetricName) || MetricName <- ['auth.jwt.success', 'auth.jwt.failure', 'auth.jwt.ignore']].
 
 %%------------------------------------------------------------------------------
 %% Authentication callbacks
@@ -27,18 +31,23 @@
 
 check(Credentials, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
-        error -> {ok, Credentials#{auth_result => token_undefined}};
+        error ->
+            emqx_metrics:inc('auth.jwt.ignore'),
+            {ok, Credentials#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
                         {ok, Claims} ->
                             verify_claims(Checklists, Claims, Credentials);
-                        {error, Reason} -> {stop, Credentials#{auth_result => Reason}}
+                        {error, Reason} ->
+                            emqx_metrics:inc('auth.jwt.failure'),
+                            {stop, Credentials#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
-                    ?LOG(error, "[JWT] Check token error: ~p", [Reason]), ok
+                    ?LOG(error, "[JWT] Check token error: ~p", [Reason]),
+                    emqx_metrics:inc('auth.jwt.ignore'), ok
             end
     end.
 
@@ -94,9 +103,13 @@ decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 verify_claims(Checklists, Claims, Credentials) ->
     case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
         {error, Reason} ->
-            {stop, Credentials#{auth_result => {error, Reason}}};
+            emqx_metrics:inc('auth.jwt.failure'),
+            {stop, Credentials#{auth_result => {error, Reason}, anonymous => false}};
         ok ->
-            {stop, Credentials#{auth_result => success, jwt_claims => Claims}}
+            emqx_metrics:inc('auth.jwt.success'),
+            {stop, Credentials#{jwt_claims => Claims,
+                                anonymous => false,
+                                auth_result => success}}
     end.
 
 do_verify_claims([], _Claims) ->
