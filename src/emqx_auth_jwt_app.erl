@@ -59,7 +59,7 @@ auth_env() ->
 read_pubkey() ->
     case env(pubkey, undefined) of
         undefined  -> undefined;
-        {ok, Path} ->
+        Path ->
             {ok, PubKey} = file:read_file(Path), PubKey
     end.
 
