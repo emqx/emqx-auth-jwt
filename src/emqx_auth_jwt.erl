@@ -18,7 +18,7 @@
 -include_lib("emqx/include/logger.hrl").
 
 -export([ register_metrics/0
-        , check/2
+        , check/3
         , description/0
         ]).
 
@@ -29,20 +29,20 @@ register_metrics() ->
 %% Authentication callbacks
 %%------------------------------------------------------------------------------
 
-check(Credentials, Env = #{from := From, checklists := Checklists}) ->
+check(Credentials, AuthResult, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
         error ->
             emqx_metrics:inc('auth.jwt.ignore'),
-            {ok, Credentials#{auth_result => token_undefined, anonymous => false}};
+            {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
                         {ok, Claims} ->
-                            verify_claims(Checklists, Claims, Credentials);
+                            {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, Credentials))};
                         {error, Reason} ->
                             emqx_metrics:inc('auth.jwt.failure'),
-                            {stop, Credentials#{auth_result => Reason, anonymous => false}}
+                            {stop, AuthResult#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
@@ -104,12 +104,10 @@ verify_claims(Checklists, Claims, Credentials) ->
     case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
         {error, Reason} ->
             emqx_metrics:inc('auth.jwt.failure'),
-            {stop, Credentials#{auth_result => {error, Reason}, anonymous => false}};
+            #{auth_result => Reason, anonymous => false};
         ok ->
             emqx_metrics:inc('auth.jwt.success'),
-            {stop, Credentials#{jwt_claims => Claims,
-                                anonymous => false,
-                                auth_result => success}}
+            #{auth_result => success, anonymous => false, jwt_claims => Claims}
     end.
 
 do_verify_claims([], _Claims) ->
@@ -117,7 +115,7 @@ do_verify_claims([], _Claims) ->
 do_verify_claims([{Key, Expected} | L], Claims) ->
     case maps:get(Key, Claims, undefined) =:= Expected of
         true -> do_verify_claims(L, Claims);
-        false -> {error, list_to_atom("unexpected_" ++ atom_to_list(Key))}
+        false -> {error, {verify_claim_failed, Key}}
     end.
 
 feedvar(Checklists, #{username := Username, client_id := ClientId}) ->
