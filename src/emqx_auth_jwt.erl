@@ -1,4 +1,5 @@
-%% Copyright (c) 2013-2019 EMQ Technologies Co., Ltd. All Rights Reserved.
+%%--------------------------------------------------------------------
+%% Copyright (c) 2019 EMQ Technologies Co., Ltd. All Rights Reserved.
 %%
 %% Licensed under the Apache License, Version 2.0 (the "License");
 %% you may not use this file except in compliance with the License.
@@ -11,6 +12,7 @@
 %% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 %% See the License for the specific language governing permissions and
 %% limitations under the License.
+%%--------------------------------------------------------------------
 
 -module(emqx_auth_jwt).
 
@@ -22,15 +24,21 @@
         , description/0
         ]).
 
+-define(AUTH_METRICS,
+        ['auth.jwt.success',
+         'auth.jwt.failure',
+         'auth.jwt.ignore'
+        ]).
+
 register_metrics() ->
-    [emqx_metrics:new(MetricName) || MetricName <- ['auth.jwt.success', 'auth.jwt.failure', 'auth.jwt.ignore']].
+    [emqx_metrics:new(MetricName) || MetricName <- ?AUTH_METRICS].
 
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 %% Authentication callbacks
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 
-check(Credentials, AuthResult, Env = #{from := From, checklists := Checklists}) ->
-    case maps:find(From, Credentials) of
+check(Client, AuthResult, Env = #{from := From, checklists := Checklists}) ->
+    case maps:find(From, Client) of
         error ->
             emqx_metrics:inc('auth.jwt.ignore'),
             {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
@@ -39,7 +47,7 @@ check(Credentials, AuthResult, Env = #{from := From, checklists := Checklists}) 
                 Headers ->
                     case verify_token(Headers, Token, Env) of
                         {ok, Claims} ->
-                            {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, Credentials))};
+                            {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, Client))};
                         {error, Reason} ->
                             emqx_metrics:inc('auth.jwt.failure'),
                             {stop, AuthResult#{auth_result => Reason, anonymous => false}}
@@ -53,9 +61,9 @@ check(Credentials, AuthResult, Env = #{from := From, checklists := Checklists}) 
 
 description() -> "Authentication with JWT".
 
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 %% Verify Token
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
@@ -96,12 +104,12 @@ decode_algo(<<"ES512">>) -> es512;
 decode_algo(<<"none">>)  -> none;
 decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 %% Verify Claims
-%%------------------------------------------------------------------------------
+%%--------------------------------------------------------------------
 
-verify_claims(Checklists, Claims, Credentials) ->
-    case do_verify_claims(feedvar(Checklists, Credentials), Claims) of
+verify_claims(Checklists, Claims, Client) ->
+    case do_verify_claims(feedvar(Checklists, Client), Claims) of
         {error, Reason} ->
             emqx_metrics:inc('auth.jwt.failure'),
             #{auth_result => Reason, anonymous => false};
