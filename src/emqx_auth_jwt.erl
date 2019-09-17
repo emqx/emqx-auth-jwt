@@ -30,32 +30,33 @@
          'auth.jwt.ignore'
         ]).
 
+-spec(register_metrics() -> ok).
 register_metrics() ->
-    [emqx_metrics:new(MetricName) || MetricName <- ?AUTH_METRICS].
+    lists:foreach(fun emqx_metrics:new/1, ?AUTH_METRICS).
 
 %%--------------------------------------------------------------------
 %% Authentication callbacks
 %%--------------------------------------------------------------------
 
-check(Client, AuthResult, Env = #{from := From, checklists := Checklists}) ->
-    case maps:find(From, Client) of
+check(ClientInfo, AuthResult, Env = #{from := From, checklists := Checklists}) ->
+    case maps:find(From, ClientInfo) of
         error ->
-            emqx_metrics:inc('auth.jwt.ignore'),
+            ok = emqx_metrics:inc('auth.jwt.ignore'),
             {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
                 Headers ->
                     case verify_token(Headers, Token, Env) of
                         {ok, Claims} ->
-                            {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, Client))};
+                            {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, ClientInfo))};
                         {error, Reason} ->
-                            emqx_metrics:inc('auth.jwt.failure'),
+                            ok = emqx_metrics:inc('auth.jwt.failure'),
                             {stop, AuthResult#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
                     ?LOG(error, "[JWT] Check token error: ~p", [Reason]),
-                    emqx_metrics:inc('auth.jwt.ignore'), ok
+                    emqx_metrics:inc('auth.jwt.ignore')
             end
     end.
 
@@ -108,13 +109,13 @@ decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 %% Verify Claims
 %%--------------------------------------------------------------------
 
-verify_claims(Checklists, Claims, Client) ->
-    case do_verify_claims(feedvar(Checklists, Client), Claims) of
+verify_claims(Checklists, Claims, ClientInfo) ->
+    case do_verify_claims(feedvar(Checklists, ClientInfo), Claims) of
         {error, Reason} ->
-            emqx_metrics:inc('auth.jwt.failure'),
+            ok = emqx_metrics:inc('auth.jwt.failure'),
             #{auth_result => Reason, anonymous => false};
         ok ->
-            emqx_metrics:inc('auth.jwt.success'),
+            ok = emqx_metrics:inc('auth.jwt.success'),
             #{auth_result => success, anonymous => false, jwt_claims => Claims}
     end.
 
