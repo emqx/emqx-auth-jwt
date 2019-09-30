@@ -127,7 +127,7 @@ do_verify_claims([{Key, Expected} | L], Claims) ->
         false -> {error, {verify_claim_failed, Key}}
     end.
 
-feedvar(Checklists, #{username := Username, client_id := ClientId}) ->
+feedvar(Checklists, #{username := Username, clientid := ClientId}) ->
     lists:map(fun({K, <<"%u">>}) -> {K, Username};
                  ({K, <<"%c">>}) -> {K, ClientId};
                  ({K, Expected}) -> {K, Expected}
