@@ -77,7 +77,7 @@ set_special_configs(_) ->
 %%------------------------------------------------------------------------------
 
 t_check_auth(_) ->
-    Plain = #{clientid => <<"client1">>, username => <<"plain">>},
+    Plain = #{clientid => <<"client1">>, username => <<"plain">>, zone => external},
     Jwt = jwerl:sign([{clientid, <<"client1">>},
                       {username, <<"plain">>},
                       {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
@@ -102,7 +102,7 @@ t_check_auth(_) ->
 
 t_check_claims(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{sub, <<"value">>}]),
-    Plain = #{clientid => <<"client1">>, username => <<"plain">>},
+    Plain = #{clientid => <<"client1">>, username => <<"plain">>, zone => external},
     Jwt = jwerl:sign([{clientid, <<"client1">>},
                       {username, <<"plain">>},
                       {sub, value},
@@ -118,7 +118,7 @@ t_check_claims(_) ->
 
 t_check_claims_clientid(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{clientid, <<"%c">>}]),
-    Plain = #{clientid => <<"client23">>, username => <<"plain">>},
+    Plain = #{clientid => <<"client23">>, username => <<"plain">>, zone => external},
     Jwt = jwerl:sign([{clientid, <<"client23">>},
                       {username, <<"plain">>},
                       {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
@@ -133,7 +133,7 @@ t_check_claims_clientid(_) ->
 
 t_check_claims_username(_) ->
     application:set_env(emqx_auth_jwt, verify_claims, [{username, <<"%u">>}]),
-    Plain = #{clientid => <<"client23">>, username => <<"plain">>},
+    Plain = #{clientid => <<"client23">>, username => <<"plain">>, zone => external},
     Jwt = jwerl:sign([{clientid, <<"client23">>},
                       {username, <<"plain">>},
                       {exp, os:system_time(seconds) + 3}], hs256, <<"emqxsecret">>),
