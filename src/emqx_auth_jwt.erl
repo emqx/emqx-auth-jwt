@@ -19,6 +19,8 @@
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
 
+-logger_header("[JWT]").
+
 -export([ register_metrics/0
         , check/3
         , description/0
@@ -55,7 +57,7 @@ check(ClientInfo, AuthResult, Env = #{from := From, checklists := Checklists}) -
                     end
             catch
                 _Error:Reason ->
-                    ?LOG(error, "[JWT] Check token error: ~p", [Reason]),
+                    ?LOG(error, "Check token error: ~p", [Reason]),
                     emqx_metrics:inc('auth.jwt.ignore')
             end
     end.
@@ -79,7 +81,7 @@ verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
 verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
     verify_token2(Alg, Token, PubKey);
 verify_token(Header, _Token, _Env) ->
-    ?LOG(error, "[JWT] Unsupported token algorithm: ~p", [Header]),
+    ?LOG(error, "Unsupported token algorithm: ~p", [Header]),
     {error, token_unsupported}.
 
 verify_token2(Alg, Token, SecretOrKey) ->
