@@ -16,23 +16,12 @@
 
 -module(emqx_auth_jwt_SUITE).
 
--export([ all/0
-        , groups/0
-        , init_per_suite/1
-        , end_per_suite/1
-        ]).
-
--export([ t_check_auth/1
-        , t_check_claims/1
-        , t_check_claims_clientid/1
-        , t_check_claims_username/1
-        ]).
-
--include_lib("eunit/include/eunit.hrl").
-
--include_lib("common_test/include/ct.hrl").
+-compile(nowarn_export_all).
+-compile(export_all).
 
 -include_lib("emqx/include/emqx.hrl").
+-include_lib("eunit/include/eunit.hrl").
+-include_lib("common_test/include/ct.hrl").
 
 -define(APP, emqx_auth_jwt).
 

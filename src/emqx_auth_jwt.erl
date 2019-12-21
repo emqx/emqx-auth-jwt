@@ -19,16 +19,24 @@
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
 
+-logger_header("[JWT]").
+
 -export([ register_metrics/0
         , check/3
         , description/0
         ]).
 
--define(AUTH_METRICS,
-        ['auth.jwt.success',
-         'auth.jwt.failure',
-         'auth.jwt.ignore'
-        ]).
+-record(auth_metrics, {
+        success = 'client.auth.success',
+        failure = 'client.auth.failure',
+        ignore = 'client.auth.ignore'
+    }).
+
+-define(METRICS(Type), tl(tuple_to_list(#Type{}))).
+-define(METRICS(Type, K), #Type{}#Type.K).
+
+-define(AUTH_METRICS, ?METRICS(auth_metrics)).
+-define(AUTH_METRICS(K), ?METRICS(auth_metrics, K)).
 
 -spec(register_metrics() -> ok).
 register_metrics() ->
@@ -41,7 +49,7 @@ register_metrics() ->
 check(ClientInfo, AuthResult, Env = #{from := From, checklists := Checklists}) ->
     case maps:find(From, ClientInfo) of
         error ->
-            ok = emqx_metrics:inc('auth.jwt.ignore'),
+            ok = emqx_metrics:inc(?AUTH_METRICS(ignore)),
             {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
             try jwerl:header(Token) of
@@ -50,13 +58,13 @@ check(ClientInfo, AuthResult, Env = #{from := From, checklists := Checklists}) -
                         {ok, Claims} ->
                             {stop, maps:merge(AuthResult, verify_claims(Checklists, Claims, ClientInfo))};
                         {error, Reason} ->
-                            ok = emqx_metrics:inc('auth.jwt.failure'),
+                            ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
                             {stop, AuthResult#{auth_result => Reason, anonymous => false}}
                     end
             catch
                 _Error:Reason ->
-                    ?LOG(error, "[JWT] Check token error: ~p", [Reason]),
-                    emqx_metrics:inc('auth.jwt.ignore')
+                    ?LOG(error, "Check token error: ~p", [Reason]),
+                    emqx_metrics:inc(?AUTH_METRICS(ignore))
             end
     end.
 
@@ -79,7 +87,7 @@ verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
 verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
     verify_token2(Alg, Token, PubKey);
 verify_token(Header, _Token, _Env) ->
-    ?LOG(error, "[JWT] Unsupported token algorithm: ~p", [Header]),
+    ?LOG(error, "Unsupported token algorithm: ~p", [Header]),
     {error, token_unsupported}.
 
 verify_token2(Alg, Token, SecretOrKey) ->
@@ -112,10 +120,10 @@ decode_algo(Alg) -> throw({error, {unsupported_algorithm, Alg}}).
 verify_claims(Checklists, Claims, ClientInfo) ->
     case do_verify_claims(feedvar(Checklists, ClientInfo), Claims) of
         {error, Reason} ->
-            ok = emqx_metrics:inc('auth.jwt.failure'),
+            ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
             #{auth_result => Reason, anonymous => false};
         ok ->
-            ok = emqx_metrics:inc('auth.jwt.success'),
+            ok = emqx_metrics:inc(?AUTH_METRICS(success)),
             #{auth_result => success, anonymous => false, jwt_claims => Claims}
     end.
 
