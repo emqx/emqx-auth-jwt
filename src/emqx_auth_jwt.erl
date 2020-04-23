@@ -76,22 +76,25 @@ description() -> "Authentication with JWT".
 
 verify_token(#{alg := <<"HS", _/binary>>}, _Token, #{secret := undefined}) ->
     {error, hmac_secret_undefined};
-verify_token(#{alg := Alg = <<"HS", _/binary>>}, Token, #{secret := Secret}) ->
-    verify_token2(Alg, Token, Secret);
+verify_token(#{alg := Alg = <<"HS", _/binary>>}, Token, #{secret := Secret, opts := Opts}) ->
+    verify_token2(Alg, Token, Secret, Opts);
+
 verify_token(#{alg := <<"RS", _/binary>>}, _Token, #{pubkey := undefined}) ->
     {error, rsa_pubkey_undefined};
-verify_token(#{alg := Alg = <<"RS", _/binary>>}, Token, #{pubkey := PubKey}) ->
-    verify_token2(Alg, Token, PubKey);
+verify_token(#{alg := Alg = <<"RS", _/binary>>}, Token, #{pubkey := PubKey, opts := Opts}) ->
+    verify_token2(Alg, Token, PubKey, Opts);
+
 verify_token(#{alg := <<"ES", _/binary>>}, _Token, #{pubkey := undefined}) ->
     {error, ecdsa_pubkey_undefined};
-verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey}) ->
-    verify_token2(Alg, Token, PubKey);
+verify_token(#{alg := Alg = <<"ES", _/binary>>}, Token, #{pubkey := PubKey, opts := Opts}) ->
+    verify_token2(Alg, Token, PubKey, Opts);
+
 verify_token(Header, _Token, _Env) ->
     ?LOG(error, "Unsupported token algorithm: ~p", [Header]),
     {error, token_unsupported}.
 
-verify_token2(Alg, Token, SecretOrKey) ->
-    try jwerl:verify(Token, decode_algo(Alg), SecretOrKey) of
+verify_token2(Alg, Token, SecretOrKey, Opts) ->
+    try jwerl:verify(Token, decode_algo(Alg), SecretOrKey, #{}, Opts) of
         {ok, Claims}  ->
             {ok, Claims};
         {error, Reason} ->
