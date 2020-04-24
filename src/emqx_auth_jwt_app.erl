@@ -54,6 +54,7 @@ auth_env() ->
      , from => env(from, password)
      , pubkey => read_pubkey()
      , checklists => env(verify_claims, [])
+     , opts => env(jwerl_opts, #{})
      }.
 
 read_pubkey() ->

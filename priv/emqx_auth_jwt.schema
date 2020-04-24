@@ -35,3 +35,14 @@
    end
 end}.
 
+{mapping, "auth.jwt.signature_format", "emqx_auth_jwt.jwerl_opts", [
+  {default, "der"},
+  {datatype, {enum, [raw, der]}}
+]}.
+
+{translation, "emqx_auth_jwt.jwerl_opts", fun(Conf) ->
+    Filter = fun(L) -> [I || I <- L, I /= undefined] end,
+    maps:from_list(Filter(
+        [{raw, cuttlefish:conf_get("auth.jwt.signature_format", Conf) == raw}]
+    ))
+end}.
