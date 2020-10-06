@@ -1,0 +1,22 @@
+version: '3'
+services:
+  # emqttd instance with emq-auth-jwt installed and configured.
+  emqttd:
+    build: .
+    networks: 
+      test:
+   
+  # execute remote integration tests. 
+  # constainter with mosquitto
+  sut:
+    build: 
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - emqttd
+    networks: 
+      test:
+
+networks:
+  test:
+    
