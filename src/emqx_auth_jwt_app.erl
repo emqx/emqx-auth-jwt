@@ -43,27 +43,25 @@ stop(_State) ->
 %%--------------------------------------------------------------------
 
 init([]) ->
-    {ok, { {one_for_all, 1, 10}, []} }.
+    Options = [{secret, env(secret, undefined)},
+               {pubkey, env(pubkey, undefined)},
+               {jwks_addr, env(jwks, undefined)}],
+    Svr = #{id => jwt_svr,
+            start => {emqx_auth_jwt_svr, start_link, [Options]},
+            restart => permanent,
+            shutdown => brutal_kill,
+            type => worker,
+            modules => [emqx_auth_jwt_svr]},
+    {ok, {{one_for_all, 1, 10}, [Svr]}}.
 
 %%--------------------------------------------------------------------
 %% Internal functions
 %%--------------------------------------------------------------------
 
 auth_env() ->
-    #{secret     => env(secret, undefined),
-      from       => env(from, password),
-      pubkey     => read_pubkey(),
-      checklists => env(verify_claims, []),
-      opts       => env(jwerl_opts, #{})
+    #{ from => env(from, password)
+     , checklists => env(verify_claims, [])
      }.
-
-read_pubkey() ->
-    case env(pubkey, undefined) of
-        undefined  -> undefined;
-        Path ->
-            {ok, PubKey} = file:read_file(Path), PubKey
-    end.
 
 env(Key, Default) ->
     application:get_env(?APP, Key, Default).
-
