@@ -4,6 +4,10 @@
   {datatype, string}
 ]}.
 
+{mapping, "auth.jwt.jwks", "emqx_auth_jwt.jwks", [
+  {datatype, string}
+]}.
+
 {mapping, "auth.jwt.from", "emqx_auth_jwt.from", [
   {default, password},
   {datatype, atom}
@@ -28,10 +32,9 @@
         true ->
             lists:foldr(
               fun({["auth","jwt","verify_claims", Name], Value}, Acc) ->
-                      [{list_to_atom(Name), list_to_binary(Value)} | Acc];
+                      [{list_to_binary(Name), list_to_binary(Value)} | Acc];
                  ({["auth","jwt","verify_claims"], _Value}, Acc) ->
                       Acc
               end, [], cuttlefish_variable:filter_by_prefix("auth.jwt.verify_claims", Conf))
    end
 end}.
-
