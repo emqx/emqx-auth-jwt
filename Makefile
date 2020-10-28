@@ -11,14 +11,17 @@ compile:
 
 clean: distclean
 
-ct: compile
+ct:
 	$(REBAR) as test ct -v
 
-eunit: compile
+eunit:
 	$(REBAR) as test eunit
 
 xref:
 	$(REBAR) xref
+
+dialyzer:
+	$(REBAR) dialyzer
 
 cover:
 	$(REBAR) cover

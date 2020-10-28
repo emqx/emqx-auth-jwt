@@ -38,7 +38,7 @@
         ]).
 
 -type options() :: [option()].
--type option() :: {secert, list()} 
+-type option() :: {secert, list()}
                 | {pubkey, list()}
                 | {jwks_addr, list()}
                 | {interval, pos_integer()}.
@@ -55,7 +55,7 @@
 start_link(Options) ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [Options], []).
 
--spec verify(binary()) -> {ok, Payload :: binary()} | {error, term()}.
+-spec verify(binary()) -> {ok, Payload :: map()} | {error, term()}.
 verify(JwsCompacted) when is_binary(JwsCompacted) ->
     gen_server:call(?MODULE, {verify, JwsCompacted}).
 
@@ -154,7 +154,7 @@ request_jwks(Addr) ->
         {error, Reason} ->
             throw({error, Reason});
         {ok, {_Code, _Headers, Body}} ->
-            JwkSet = jose_jwk:from(jsx:decode(Body, [return_maps])),
+            JwkSet = jose_jwk:from(emqx_json:decode(Body, [return_maps])),
             {_, Jwks} = JwkSet#jose_jwk.keys, Jwks
     end.
 

@@ -2,28 +2,26 @@ name: Run test cases
 
 on: [push, pull_request]
 
-jobs:    
+jobs:
     run_test_cases:
         runs-on: ubuntu-latest
-      
+
         container:
             image: erlang:22.1
-            
+
         steps:
             - uses: actions/checkout@v1
-            - name: run test cases
+            - name: Code analysis
               run: |
                 make xref
-                make eunit  
+                make dialyzer
+            - name: Run test cases
+              run: |
+                make eunit
                 make ct
                 make cover
             - uses: actions/upload-artifact@v1
-              if: always()
+              if: failure()
               with:
                 name: logs
                 path: _build/test/logs
-            - uses: actions/upload-artifact@v1
-              with:
-                name: cover
-                path: _build/test/cover
-
