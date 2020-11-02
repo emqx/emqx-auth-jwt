@@ -54,7 +54,11 @@ load_jose() ->
 
 %% @private
 load_extra_mods() ->
-    code:load_file(emqx_auth_jwt_svr).
+    try
+        _ = emqx_auth_jwt_svr:module_info()
+    catch _:_ ->
+        code:load_file(emqx_auth_jwt_svr)
+    end.
 
 %%--------------------------------------------------------------------
 %% Dummy supervisor
