@@ -82,11 +82,11 @@ do_init_jwks(Options) ->
                   V ->
                      try F(V) of
                          {error, Reason} ->
-                             ?LOG(error, "Build JWK failed: {error, ~p}~n", [Reason]),
+                             ?LOG(warning, "Build ~p JWK failed: {error, ~p}~n", [K, Reason]),
                              undefined;
                          J -> J
                      catch T:R:_ ->
-                         ?LOG(error, "Build JWK failed: {~p, ~p}~n", [T, R]),
+                         ?LOG(warning, "Build ~p JWK failed: {~p, ~p}~n", [K, T, R]),
                          undefined
                      end
               end
@@ -112,7 +112,7 @@ handle_info({timeout, _TRef, refresh}, State = #state{addr = Addr}) ->
                  State#state{remote = request_jwks(Addr)}
              catch
                  _:R ->
-                     ?LOG(error, "Request jwks server failed: ~p~n", [R]),
+                     ?LOG(error, "Request jwks server ~s failed: ~p~n", [Addr, R]),
                      State
              end,
     {noreply, reset_timer(NState)};
