@@ -32,6 +32,7 @@
 
 start(_Type, _Args) ->
     load_jose(),
+    load_extra_mods(),
     emqx_auth_jwt:register_metrics(),
     emqx:hook('client.authenticate', ?JWT_ACTION),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
@@ -39,6 +40,7 @@ start(_Type, _Args) ->
 stop(_State) ->
     emqx:unhook('client.authenticate', ?JWT_ACTION).
 
+%% @private
 load_jose() ->
     try
         _ = jose:module_info()
@@ -49,6 +51,10 @@ load_jose() ->
         Files = filelib:wildcard(Path ++ "/*.beam"),
         [code:load_file(list_to_atom(lists:nth(2, lists:reverse(string:tokens(F, "/."))))) || F <- Files]
     end.
+
+%% @private
+load_extra_mods() ->
+    code:load_file(emqx_auth_jwt_svr).
 
 %%--------------------------------------------------------------------
 %% Dummy supervisor
