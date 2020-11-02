@@ -49,7 +49,10 @@ load_jose() ->
         true = code:add_path(Path),
         ok = application:load(jose),
         Files = filelib:wildcard(Path ++ "/*.beam"),
-        [code:load_file(list_to_atom(lists:nth(2, lists:reverse(string:tokens(F, "/."))))) || F <- Files]
+
+        %% load jose
+        Result1 = [code:load_file(list_to_atom(lists:nth(2, lists:reverse(string:tokens(F, "/."))))) || F <- Files],
+        logger:info("Load the jose application successfully, modules: ~p~n", [Result1])
     end.
 
 %% @private

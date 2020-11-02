@@ -82,11 +82,13 @@ do_init_jwks(Options) ->
                   V ->
                      try F(V) of
                          {error, Reason} ->
-                             ?LOG(warning, "Build ~p JWK failed: {error, ~p}~n", [K, Reason]),
+                             ?LOG(warning, "Build ~p JWK ~p failed: {error, ~p}~n",
+                                  [K, V, Reason]),
                              undefined;
                          J -> J
                      catch T:R:_ ->
-                         ?LOG(warning, "Build ~p JWK failed: {~p, ~p}~n", [K, T, R]),
+                         ?LOG(warning, "Build ~p JWK ~p failed: {~p, ~p}~n",
+                              [K, V, T, R]),
                          undefined
                      end
               end
@@ -110,10 +112,8 @@ handle_cast(_Msg, State) ->
 handle_info({timeout, _TRef, refresh}, State = #state{addr = Addr}) ->
     NState = try
                  State#state{remote = request_jwks(Addr)}
-             catch
-                 _:R ->
-                     ?LOG(error, "Request jwks server ~s failed: ~p~n", [Addr, R]),
-                     State
+             catch _:_ ->
+                 State
              end,
     {noreply, reset_timer(NState)};
 
@@ -152,10 +152,15 @@ handle_verify(JwsCompacted,
 request_jwks(Addr) ->
     case httpc:request(get, {Addr, []}, [], [{body_format, binary}]) of
         {error, Reason} ->
-            throw({error, Reason});
+            error(Reason);
         {ok, {_Code, _Headers, Body}} ->
-            JwkSet = jose_jwk:from(emqx_json:decode(Body, [return_maps])),
-            {_, Jwks} = JwkSet#jose_jwk.keys, Jwks
+            try
+                JwkSet = jose_jwk:from(emqx_json:decode(Body, [return_maps])),
+                {_, Jwks} = JwkSet#jose_jwk.keys, Jwks
+            catch _:_ ->
+                ?LOG(error, "Invalid jwks server response: ~p~n", [Body]),
+                error(badarg)
+            end
     end.
 
 reset_timer(State = #state{addr = undefined}) ->
