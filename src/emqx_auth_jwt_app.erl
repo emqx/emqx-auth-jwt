@@ -31,12 +31,24 @@
 -define(JWT_ACTION, {emqx_auth_jwt, check, [auth_env()]}).
 
 start(_Type, _Args) ->
-    ok = emqx_auth_jwt:register_metrics(),
+    load_jose(),
+    emqx_auth_jwt:register_metrics(),
     emqx:hook('client.authenticate', ?JWT_ACTION),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 stop(_State) ->
     emqx:unhook('client.authenticate', ?JWT_ACTION).
+
+load_jose() ->
+    try
+        _ = jose:module_info()
+    catch _:_ ->
+        [Path] = filelib:wildcard(code:lib_dir() ++ "/jose-*/ebin"),
+        true = code:add_path(Path),
+        ok = application:load(jose),
+        Files = filelib:wildcard(Path ++ "/*.beam"),
+        [code:load_file(list_to_atom(lists:nth(2, lists:reverse(string:tokens(F, "/."))))) || F <- Files]
+    end.
 
 %%--------------------------------------------------------------------
 %% Dummy supervisor
