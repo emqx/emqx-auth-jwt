@@ -68,9 +68,7 @@ load_extra_mods() ->
 %%--------------------------------------------------------------------
 
 init([]) ->
-    Options = [{secret, env(secret, undefined)},
-               {pubkey, env(pubkey, undefined)},
-               {jwks_addr, env(jwks, undefined)}],
+    Options = jwks_svr_options(),
     Svr = #{id => jwt_svr,
             start => {emqx_auth_jwt_svr, start_link, [Options]},
             restart => permanent,
@@ -87,6 +85,14 @@ auth_env() ->
     #{ from => env(from, password)
      , checklists => env(verify_claims, [])
      }.
+
+jwks_svr_options() ->
+    [{K, V} || {K, V}
+             <- [{secret, env(secret, undefined)},
+                 {pubkey, env(pubkey, undefined)},
+                 {jwks_addr, env(jwks, undefined)},
+                 {interval, env(refresh_interval, undefined)}],
+             V /= undefined].
 
 env(Key, Default) ->
     application:get_env(?APP, Key, Default).
