@@ -8,6 +8,10 @@
   {datatype, string}
 ]}.
 
+{mapping, "auth.jwt.jwks.refresh_interval", "emqx_auth_jwt.refresh_interval", [
+  {datatype, {duration, ms}}
+]}.
+
 {mapping, "auth.jwt.from", "emqx_auth_jwt.from", [
   {default, password},
   {datatype, atom}

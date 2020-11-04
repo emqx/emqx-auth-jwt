@@ -38,7 +38,7 @@
         ]).
 
 -type options() :: [option()].
--type option() :: {secert, list()}
+-type option() :: {secret, list()}
                 | {pubkey, list()}
                 | {jwks_addr, list()}
                 | {interval, pos_integer()}.

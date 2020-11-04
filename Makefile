@@ -26,6 +26,7 @@ cover:
 distclean:
 	@rm -rf _build
 	@rm -f data/app.*.config data/vm.*.args rebar.lock
+
 CUTTLEFISH_SCRIPT = _build/default/lib/cuttlefish/cuttlefish
 
 $(CUTTLEFISH_SCRIPT):
