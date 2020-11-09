@@ -46,13 +46,15 @@ register_metrics() ->
 %% Authentication callbacks
 %%--------------------------------------------------------------------
 
-check(ClientInfo, AuthResult, #{from := From, checklists := Checklists}) ->
+check(ClientInfo, AuthResult, #{pid := Pid,
+                                from := From,
+                                checklists := Checklists}) ->
     case maps:find(From, ClientInfo) of
         error ->
             ok = emqx_metrics:inc(?AUTH_METRICS(ignore)),
             {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
         {ok, Token} ->
-            case emqx_auth_jwt_svr:verify(Token) of
+            case emqx_auth_jwt_svr:verify(Pid, Token) of
                 {error, not_found} ->
                     ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
                 {error, Reason} ->

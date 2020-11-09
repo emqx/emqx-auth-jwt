@@ -26,7 +26,7 @@
 %% APIs
 -export([start_link/1]).
 
--export([verify/1]).
+-export([verify/2]).
 
 %% gen_server callbacks
 -export([ init/1
@@ -53,11 +53,13 @@
 
 -spec start_link(options()) -> gen_server:start_ret().
 start_link(Options) ->
-    gen_server:start_link({local, ?MODULE}, ?MODULE, [Options], []).
+    gen_server:start_link(?MODULE, [Options], []).
 
--spec verify(binary()) -> {ok, Payload :: map()} | {error, term()}.
-verify(JwsCompacted) when is_binary(JwsCompacted) ->
-    gen_server:call(?MODULE, {verify, JwsCompacted}).
+-spec verify(pid(), binary())
+    -> {error, term()}
+     | {ok, Payload :: map()}.
+verify(S, JwsCompacted) when is_binary(JwsCompacted) ->
+    gen_server:call(S, {verify, JwsCompacted}).
 
 %%--------------------------------------------------------------------
 %% gen_server callbacks
