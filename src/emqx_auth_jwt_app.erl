@@ -31,37 +31,12 @@
 -define(JWT_ACTION, {emqx_auth_jwt, check, [auth_env()]}).
 
 start(_Type, _Args) ->
-    load_jose(),
-    load_extra_mods(),
-    emqx_auth_jwt:register_metrics(),
+    ok = emqx_auth_jwt:register_metrics(),
     emqx:hook('client.authenticate', ?JWT_ACTION),
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 stop(_State) ->
     emqx:unhook('client.authenticate', ?JWT_ACTION).
-
-%% @private
-load_jose() ->
-    try
-        _ = jose:module_info()
-    catch _:_ ->
-        [Path] = filelib:wildcard(code:lib_dir() ++ "/jose-*/ebin"),
-        true = code:add_path(Path),
-        ok = application:load(jose),
-        Files = filelib:wildcard(Path ++ "/*.beam"),
-
-        %% load jose
-        Result1 = [code:load_file(list_to_atom(lists:nth(2, lists:reverse(string:tokens(F, "/."))))) || F <- Files],
-        logger:info("Load the jose application successfully, modules: ~p~n", [Result1])
-    end.
-
-%% @private
-load_extra_mods() ->
-    try
-        _ = emqx_auth_jwt_svr:module_info()
-    catch _:_ ->
-        code:load_file(emqx_auth_jwt_svr)
-    end.
 
 %%--------------------------------------------------------------------
 %% Dummy supervisor
@@ -82,8 +57,10 @@ init([]) ->
 %%--------------------------------------------------------------------
 
 auth_env() ->
+    Checklists = [{atom_to_binary(K, utf8), V}
+                  || {K, V} <- env(verify_claims, [])],
     #{ from => env(from, password)
-     , checklists => env(verify_claims, [])
+     , checklists => Checklists
      }.
 
 jwks_svr_options() ->
