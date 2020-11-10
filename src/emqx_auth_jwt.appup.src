@@ -5,17 +5,17 @@
 %%
 %% see: https://erlang.org/doc/man/appup.html#ghlink-release-upgrade-instructions-id78524
 
-%{"4.2.1",
-%  [
-%    {"4.2.0", [
-%      {add_application, jose},
-%      {restart_application, emqx_auth_jwt}
-%    ]}
-%  ],
-%  [
-%    {"4.2.0", [
-%      {add_application, jwerl},
-%      {restart_application, emqx_auth_jwt}
-%    ]}
-%  ]
-%}.
+{"4.2.1",
+  [
+    {"4.2.0", [
+      {add_application, jose},
+      {restart_application, emqx_auth_jwt}
+    ]}
+  ],
+  [
+    {"4.2.0", [
+      {add_application, jwerl},
+      {restart_application, emqx_auth_jwt}
+    ]}
+  ]
+}.

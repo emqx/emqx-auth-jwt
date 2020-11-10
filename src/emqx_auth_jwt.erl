@@ -51,8 +51,7 @@ check(ClientInfo, AuthResult, #{pid := Pid,
                                 checklists := Checklists}) ->
     case maps:find(From, ClientInfo) of
         error ->
-            ok = emqx_metrics:inc(?AUTH_METRICS(ignore)),
-            {ok, AuthResult#{auth_result => token_undefined, anonymous => false}};
+            ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
         {ok, Token} ->
             case emqx_auth_jwt_svr:verify(Pid, Token) of
                 {error, not_found} ->
