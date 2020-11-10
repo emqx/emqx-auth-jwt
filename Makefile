@@ -11,10 +11,10 @@ compile:
 
 clean: distclean
 
-ct: compile
+ct:
 	$(REBAR) as test ct -v
 
-eunit: compile
+eunit:
 	$(REBAR) as test eunit
 
 xref:
@@ -26,6 +26,7 @@ cover:
 distclean:
 	@rm -rf _build
 	@rm -f data/app.*.config data/vm.*.args rebar.lock
+
 CUTTLEFISH_SCRIPT = _build/default/lib/cuttlefish/cuttlefish
 
 $(CUTTLEFISH_SCRIPT):
