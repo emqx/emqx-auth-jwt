@@ -8,13 +8,13 @@
 {"4.2.1",
   [
     {"4.2.0", [
-      {add_application, jose},
+      %{add_application, jose},
       {restart_application, emqx_auth_jwt}
     ]}
   ],
   [
     {"4.2.0", [
-      {add_application, jwerl},
+      %{add_application, jwerl},
       {restart_application, emqx_auth_jwt}
     ]}
   ]
