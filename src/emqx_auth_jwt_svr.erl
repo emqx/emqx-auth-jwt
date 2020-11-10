@@ -57,7 +57,10 @@ start_link(Options) ->
 
 -spec verify(binary()) -> {ok, Payload :: map()} | {error, term()}.
 verify(JwsCompacted) when is_binary(JwsCompacted) ->
-    gen_server:call(?MODULE, {verify, JwsCompacted}).
+    case catch jose_jws:peek(JwsCompacted) of
+        {'EXIT', _} -> {error, not_token};
+        _ -> gen_server:call(?MODULE, {verify, JwsCompacted})
+    end.
 
 %%--------------------------------------------------------------------
 %% gen_server callbacks

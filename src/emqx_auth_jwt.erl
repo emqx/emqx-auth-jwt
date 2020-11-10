@@ -17,6 +17,8 @@
 -include_lib("emqx/include/emqx.hrl").
 -include_lib("emqx/include/logger.hrl").
 
+-logger_header("[JWT]").
+
 -export([ register_metrics/0
         , check/2
         , description/0
@@ -32,13 +34,18 @@ register_metrics() ->
 check(Credentials, #{from := From, checklists := Checklists}) ->
     case maps:find(From, Credentials) of
         error ->
-            emqx_metrics:inc('auth.jwt.ignore'),
-            {ok, Credentials#{auth_result => token_undefined, anonymous => false}};
+            ?LOG(error, "From ~p not defined in system~n", [From]),
+            emqx_metrics:inc('auth.jwt.ignore'), ok;
         {ok, Token} ->
             case emqx_auth_jwt_svr:verify(Token) of
                 {error, not_found} ->
+                    ?LOG(info, "Not found suitable JWKs/Secret/Pubkey~n"),
+                    emqx_metrics:inc('auth.jwt.ignore'), ok;
+                {error, not_token} ->
+                    ?LOG(info, "The token value is not a valid JWT format~n"),
                     emqx_metrics:inc('auth.jwt.ignore'), ok;
                 {error, Reason} ->
+                    ?LOG(warning, "Checking token failed: ~p~n", [Reason]),
                     emqx_metrics:inc('auth.jwt.failure'),
                     {stop, Credentials#{auth_result => Reason, anonymous => false}};
                 {ok, Claims} ->
