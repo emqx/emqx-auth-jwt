@@ -52,9 +52,13 @@ check(ClientInfo, AuthResult, #{pid := Pid,
     case maps:find(From, ClientInfo) of
         error ->
             ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
+        {ok, undefined} ->
+            ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
         {ok, Token} ->
             case emqx_auth_jwt_svr:verify(Pid, Token) of
                 {error, not_found} ->
+                    ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
+                {error, not_token} ->
                     ok = emqx_metrics:inc(?AUTH_METRICS(ignore));
                 {error, Reason} ->
                     ok = emqx_metrics:inc(?AUTH_METRICS(failure)),
