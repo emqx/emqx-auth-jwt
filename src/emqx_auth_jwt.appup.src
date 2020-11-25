@@ -2,11 +2,7 @@
 
 {"4.2.2",
   [
-    {"4.2.1", [
-      {restart_application, emqx_auth_jwt},
-      {apply, {emqx_plugins, load, []}},
-      {apply, {emqx_modules, refresh_module, [jwt_authentication]}}
-    ]},
+    {"4.2.1", []},
     {"4.2.0", [
       {restart_application, emqx_auth_jwt},
       {apply, {emqx_plugins, load, []}},
@@ -14,11 +10,7 @@
     ]}
   ],
   [
-    {"4.2.1", [
-      {restart_application, emqx_auth_jwt},
-      {apply, {emqx_plugins, load, []}},
-      {apply, {emqx_modules, refresh_module, [jwt_authentication]}}
-    ]},
+    {"4.2.1", []},
     {"4.2.0", [
       {restart_application, emqx_auth_jwt},
       {apply, {emqx_plugins, load, []}}
