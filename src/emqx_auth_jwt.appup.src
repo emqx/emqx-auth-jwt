@@ -2,15 +2,15 @@
 
 {VSN,
   [
-    {"4.2.1", []},
     {"4.2.0", [
       {restart_application, emqx_auth_jwt}
-    ]}
+    ]},
+    {<<".*">>, []}
   ],
   [
-    {"4.2.1", []},
     {"4.2.0", [
       {restart_application, emqx_auth_jwt}
-    ]}
+    ]},
+    {<<".*">>, []}
   ]
 }.
