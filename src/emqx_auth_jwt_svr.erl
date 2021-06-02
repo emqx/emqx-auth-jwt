@@ -140,7 +140,7 @@ handle_verify(JwsCompacted,
               State = #state{static = Static, remote = Remote}) ->
     try
         Jwks = case emqx_json:decode(jose_jws:peek_protected(JwsCompacted), [return_maps]) of
-                   #{<<"kid">> := Kid} ->
+                   #{<<"kid">> := Kid} when Remote /= undefined ->
                        [J || J <- Remote, maps:get(<<"kid">>, J#jose_jwk.fields, undefined) =:= Kid];
                    _ -> Static
                end,
@@ -150,7 +150,9 @@ handle_verify(JwsCompacted,
                 {reply, do_verify(JwsCompacted, Jwks), State}
         end
     catch
-        _:_ ->
+        Class : Reason : Stk ->
+            ?LOG(error, "Handle JWK crashed: ~p, ~p, stacktrace: ~p~n",
+                        [Class, Reason, Stk]),
             {reply, {error, invalid_signature}, State}
     end.
 
