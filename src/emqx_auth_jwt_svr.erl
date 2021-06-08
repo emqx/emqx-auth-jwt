@@ -188,8 +188,8 @@ do_verify(JwsCompacted, [Jwk|More]) ->
         {true, Payload, _Jws} ->
             Claims = emqx_json:decode(Payload, [return_maps]),
             case check_claims(Claims) of
-                {false, <<"exp">>} ->
-                    {error, {invalid_signature, expired}};
+                false ->
+                    {error, invalid_signature};
                 NClaims ->
                     {ok, NClaims}
             end;
@@ -219,6 +219,6 @@ do_check_claim([{K, F}|More], Claims) ->
         {V, NClaims} ->
             case F(V) of
                 true -> do_check_claim(More, NClaims);
-                _ -> {false, K}
+                _ -> false
             end
     end.
