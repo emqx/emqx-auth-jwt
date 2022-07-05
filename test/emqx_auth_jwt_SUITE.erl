@@ -38,6 +38,8 @@ groups() ->
     ].
 
 init_per_suite(Config) ->
+    dbg:tracer(),dbg:p(all,call),
+    dbg:tpl(emqx_ct_helpers,render_config_file,x),
     emqx_ct_helpers:start_apps([emqx, emqx_auth_jwt], fun set_special_configs/1),
     Config.
 

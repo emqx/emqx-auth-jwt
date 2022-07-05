@@ -31,14 +31,12 @@
 start(_Type, _Args) ->
     {ok, Sup} = supervisor:start_link({local, ?MODULE}, ?MODULE, []),
 
-    {ok, Pid} = start_auth_server(jwks_svr_options()),
+    {ok, _} = start_auth_server(jwks_svr_options()),
     ok = emqx_auth_jwt:register_metrics(),
 
-    AuthEnv0 = auth_env(),
-    AuthEnv1 = AuthEnv0#{pid => Pid},
-
-    emqx:hook('client.authenticate', {emqx_auth_jwt, check, [AuthEnv1]}),
-    {ok, Sup, AuthEnv1}.
+    AuthEnv = auth_env(),
+    emqx:hook('client.authenticate', {emqx_auth_jwt, check, [AuthEnv]}),
+    {ok, Sup, AuthEnv}.
 
 stop(AuthEnv) ->
     emqx:unhook('client.authenticate', {emqx_auth_jwt, check, [AuthEnv]}).
