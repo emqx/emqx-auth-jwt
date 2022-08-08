@@ -2,7 +2,7 @@
 
 {VSN,
   [
-    {<<"4.2.[2-6]">>, [
+    {<<"4.2.[2-6]|4.2.13">>, [
       {load_module, emqx_auth_jwt_svr, brutal_purge, soft_purge, []}
     ]},
     {"4.2.0", [
@@ -11,7 +11,7 @@
     {<<".*">>, []}
   ],
   [
-    {<<"4.2.[2-6]">>, [
+    {<<"4.2.[2-6]|4.2.13">>, [
       {load_module, emqx_auth_jwt_svr, brutal_purge, soft_purge, []}
     ]},
     {"4.2.0", [
