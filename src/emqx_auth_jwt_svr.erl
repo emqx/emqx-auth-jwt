@@ -70,12 +70,12 @@ verify(S, JwsCompacted) when is_binary(JwsCompacted) ->
 
 init([Options]) ->
     ok = jose:json_module(jiffy),
-    {Static, Remote} = do_init_jwks(Options),
+    erlang:send(self(), {do_init_jwks, Options}),
     Intv = proplists:get_value(interval, Options, ?INTERVAL),
     {ok, reset_timer(
            #state{
-              static = Static,
-              remote = Remote,
+              static = [],
+              remote = undefined,
               addr = proplists:get_value(jwks_addr, Options),
               intv = Intv})}.
 
@@ -121,6 +121,14 @@ handle_info({timeout, _TRef, refresh}, State = #state{addr = Addr}) ->
                  State
              end,
     {noreply, reset_timer(NState)};
+
+handle_info({do_init_jwks, Options}, State) ->
+    {Static, Remote} = do_init_jwks(Options),
+    State2 = State#state{
+               static = Static,
+               remote = Remote
+              },
+    {noreply, State2};
 
 handle_info(_Info, State) ->
     {noreply, State}.
